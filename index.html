@@ -172,6 +172,7 @@
         }
         .reset-btn { background: rgba(255, 118, 117, 0.1); color: #ff7675; border: 2px solid #ff7675; }
         .undo-btn { background: rgba(108, 92, 231, 0.1); color: #6c5ce7; border: 2px solid #6c5ce7; }
+        .history-btn { background: rgba(0, 184, 148, 0.1); color: var(--primary); border: 2px solid var(--primary); }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -186,6 +187,11 @@
     </style>
 </head>
 <body id="bodyArea">
+
+<div style="position: absolute; top: 10px; width: 100%; padding: 0 20px; z-index: 100; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
+    <span>ادعيلي بالهداية</span>
+    <span dir="ltr">By: Mahmoud Tellawy</span>
+</div>
 
 <div class="container" id="mainContainer">
     <div class="click-area" id="clickArea"></div>
@@ -213,6 +219,9 @@
         </div>
         
         <div class="control-btns">
+            <button class="icon-btn history-btn" onclick="showHistoryModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg>
+            </button>
             <button class="icon-btn undo-btn" onclick="undoLast()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"></path></svg>
             </button>
@@ -233,6 +242,14 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="historyModal" style="align-items: flex-start;">
+    <div class="modal-box" style="height: 100dvh; max-height: 100dvh; max-width: 100%; border-radius: 0; background: var(--bg-grad); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;">
+        <h3 style="text-align:center; margin-top: 10px; color: var(--text-main);">سجل التسبيح</h3>
+        <div id="historyContent" style="flex: 1; overflow-y: auto; margin-top: 15px; padding-bottom: 20px;"></div>
+        <button class="modal-btn" style="width:100%; margin-top:auto; background:var(--cancel-bg); color: var(--text-main); padding:15px; border-radius:15px; font-weight:bold;" onclick="hideHistoryModal()">رجوع للمسبحة</button>
+    </div>
+</div>
+
 <script>
     const countDisplay = document.getElementById("countDisplay"),
           clickArea = document.getElementById("clickArea"),
@@ -243,11 +260,42 @@
     const circ = 85 * 2 * Math.PI;
     progressRing.style.strokeDasharray = circ;
 
+    // العداد اليومي (اللي بيظهر بره وبيصفر كل يوم)
     let zikrCounts = JSON.parse(localStorage.getItem('zikrCounts')) || {
         'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
     };
+    
+    // الحصالة التراكمية (السجل اللي بيجمع كل الأيام)
+    let zikrLifetime = JSON.parse(localStorage.getItem('zikrLifetime')) || {
+        'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
+    };
+    
     let activeZikr = localStorage.getItem('activeZikr') || 'سبحان الله';
     let isDarkMode = localStorage.getItem('theme') === 'dark';
+
+    // دالة فحص اليوم وتصفير العداد العادي مع ترحيل الأرقام للحصالة
+    function checkDateAndReset() {
+        const today = new Date().toLocaleDateString('en-CA');
+        let storedDate = localStorage.getItem('lastDate');
+        
+        if (storedDate && storedDate !== today) {
+            // ترحيل أرقام اليوم اللي خلص للحصالة التراكمية
+            for (let key in zikrCounts) {
+                zikrLifetime[key] = (zikrLifetime[key] || 0) + zikrCounts[key];
+            }
+            localStorage.setItem('zikrLifetime', JSON.stringify(zikrLifetime));
+            
+            // تصفير عداد اليوم الجديد
+            zikrCounts = {
+                'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
+            };
+            localStorage.setItem('zikrCounts', JSON.stringify(zikrCounts));
+        }
+        localStorage.setItem('lastDate', today);
+    }
+    
+    // تشغيل الدالة أول ما الصفحة تفتح
+    checkDateAndReset();
 
     // دالة الصوت الأساسية للتسبيح
     function playSoftClick(isLimit) {
@@ -264,7 +312,7 @@
         osc.start(); osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    // دالة مخصصة لأصوات الأزرار (تغيير الوضع، اختيار الذكر، التصفير)
+    // دالة مخصصة لأصوات الأزرار
     function playSoundEffect(freq, vol, duration) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
@@ -281,6 +329,8 @@
 
     function handleTap(e) {
         if(e.target.closest('button')) return;
+        
+        checkDateAndReset(); 
 
         zikrCounts[activeZikr]++;
         updateUI();
@@ -335,21 +385,21 @@
         el.classList.add('active');
         activeZikr = name;
         updateUI();
-        playSoundEffect(500, 0.6, 0.1); // صوت اختيار الذكر
+        playSoundEffect(500, 0.6, 0.1); 
     }
 
     themeToggle.onclick = () => {
         isDarkMode = !isDarkMode;
         localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         updateUI();
-        playSoundEffect(700, 0.5, 0.15); // صوت تغيير الثيم
+        playSoundEffect(700, 0.5, 0.15); 
     };
 
     function undoLast() {
         if (zikrCounts[activeZikr] > 0) {
             zikrCounts[activeZikr]--;
             updateUI();
-            playSoundEffect(400, 0.4, 0.1); // صوت الرجوع خطوة
+            playSoundEffect(400, 0.4, 0.1); 
         }
     }
 
@@ -360,7 +410,41 @@
         zikrCounts[activeZikr] = 0;
         updateUI();
         hideModal();
-        playSoundEffect(300, 0.7, 0.2); // صوت التصفير
+        playSoundEffect(300, 0.7, 0.2); 
+    }
+
+    function showHistoryModal() {
+        const historyContent = document.getElementById('historyContent');
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 20px;">';
+        
+        html += `<div style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 2px solid var(--primary);">`;
+        html += `<div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--ring-bg); padding-bottom: 10px;">
+                    <h4 style="margin: 0; color: var(--primary); font-size: 1.1rem; font-weight: 900;">رصيدك عند الله</h4>
+                 </div>`;
+        
+        html += `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+        
+        const zikrs = ['سبحان الله', 'الحمد لله', 'الله أكبر', 'أستغفر الله', 'لا حول ولا قوة إلا بالله'];
+        
+        zikrs.forEach(zikr => {
+            let total = (zikrLifetime[zikr] || 0) + (zikrCounts[zikr] || 0);
+            html += `<div style="background: var(--chip-bg); padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border-right: 4px solid var(--primary);">
+                        <span style="font-size: 1rem; color: var(--text-main); font-weight: bold;">${zikr}</span>
+                        <span style="font-size: 1.2rem; color: var(--text-main); font-weight: 900; direction: ltr;">${total}</span>
+                     </div>`;
+        });
+        
+        html += `</div></div></div>`;
+        historyContent.innerHTML = html;
+        
+        document.getElementById('historyModal').classList.add('active');
+        playSoundEffect(600, 0.5, 0.1);
+    }
+    
+    function hideHistoryModal() {
+        document.getElementById('historyModal').classList.remove('active');
+        playSoundEffect(400, 0.4, 0.1);
     }
 
     document.querySelectorAll('.chip').forEach(c => {
