@@ -184,6 +184,28 @@
             background: var(--modal-bg); padding: 30px 20px;
             border-radius: 30px 30px 0 0; width: 100%; max-width: 500px;
         }
+
+        .dua-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+            padding: 20px;
+        }
+        .dua-overlay.active { display: flex; }
+        .dua-box {
+            background: var(--card-bg); padding: 35px 25px;
+            border-radius: 25px; width: 100%; max-width: 380px;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .dua-text {
+            font-size: 1.3rem; font-weight: 900; color: var(--text-main);
+            line-height: 1.8; margin-bottom: 25px;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body id="bodyArea">
@@ -250,6 +272,13 @@
     </div>
 </div>
 
+<div class="dua-overlay" id="duaModal">
+    <div class="dua-box">
+        <div class="dua-text" id="duaText"></div>
+        <button class="modal-btn" style="width:100%; background:var(--primary); color:white; padding:15px; border-radius:15px; font-weight:bold; font-size: 1.1rem;" onclick="closeDuaModal()">آمين يا رب</button>
+    </div>
+</div>
+
 <script>
     const countDisplay = document.getElementById("countDisplay"),
           clickArea = document.getElementById("clickArea"),
@@ -260,12 +289,10 @@
     const circ = 85 * 2 * Math.PI;
     progressRing.style.strokeDasharray = circ;
 
-    // العداد اليومي (اللي بيظهر بره وبيصفر كل يوم)
     let zikrCounts = JSON.parse(localStorage.getItem('zikrCounts')) || {
         'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
     };
     
-    // الحصالة التراكمية (السجل اللي بيجمع كل الأيام)
     let zikrLifetime = JSON.parse(localStorage.getItem('zikrLifetime')) || {
         'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
     };
@@ -273,19 +300,60 @@
     let activeZikr = localStorage.getItem('activeZikr') || 'سبحان الله';
     let isDarkMode = localStorage.getItem('theme') === 'dark';
 
-    // دالة فحص اليوم وتصفير العداد العادي مع ترحيل الأرقام للحصالة
+    const duasList = [
+        "اللهم اهدنا فيمن هديت، وعافنا فيمن عافيت، وتولنا فيمن توليت.",
+        "اللهم إني أسألك الهدى والتقى والعفاف والغنى.",
+        "ربنا آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار.",
+        "اللهم يا مقلب القلوب ثبت قلبي على دينك.",
+        "اللهم إنك عفو تحب العفو فاعف عني.",
+        "اللهم اغفر لي ذنبي كله، دقه وجله، وأوله وآخره، وعلانيته وسره.",
+        "اللهم أعني على ذكرك وشكرك وحسن عبادتك.",
+        "اللهم إني أسألك العفو والعافية في الدنيا والآخرة.",
+        "يا حي يا قيوم برحمتك أستغيث، أصلح لي شأني كله.",
+        "اللهم مصرف القلوب صرف قلوبنا على طاعتك.",
+        "اللهم إني أعوذ بك من زوال نعمتك، وتحول عافيتك، وفجاءة نقمتك.",
+        "اللهم اكفني بحلالك عن حرامك، وأغنني بفضلك عمن سواك.",
+        "اللهم إني أسألك الجنة وما قرب إليها من قول أو عمل.",
+        "اللهم أجرني من النار وما قرب إليها من قول أو عمل.",
+        "اللهم ارزقني حسن الخاتمة.",
+        "اللهم ارزقنا توبة نصوحة قبل الموت.",
+        "اللهم يا مقلب القلوب والأبصار ثبت قلوبنا على دينك.",
+        "اللهم إني أسألك علماً نافعاً، ورزقاً طيباً، وعملاً متقبلاً.",
+        "اللهم اجعل القرآن العظيم ربيع قلبي، ونور صدري.",
+        "اللهم آت نفسي تقواها، وزكها أنت خير من زكاها.",
+        "اللهم إني أعوذ بك من الهم والحزن، والعجز والكسل.",
+        "اللهم إني أعوذ بك من غلبة الدين وقهر الرجال.",
+        "اللهم اجعلني مقيم الصلاة ومن ذريتي ربنا وتقبل دعاء.",
+        "رب اغفر لي ولوالدي وللمؤمنين يوم يقوم الحساب.",
+        "اللهم استر عوراتي وآمن روعاتي.",
+        "اللهم احفظني من بين يدي ومن خلفي وعن يميني وعن شمالي.",
+        "اللهم إني أسألك رضاك والجنة، وأعوذ بك من سخطك والنار.",
+        "اللهم طهر قلبي من النفاق، وعملي من الرياء.",
+        "اللهم اجعل خير عمري آخره، وخير عملي خواتيمه.",
+        "اللهم اغفر للمسلمين والمسلمات، والمؤمنين والمؤمنات."
+    ];
+
+    function showRandomDua() {
+        const randomIndex = Math.floor(Math.random() * duasList.length);
+        document.getElementById('duaText').innerText = duasList[randomIndex];
+        document.getElementById('duaModal').classList.add('active');
+    }
+
+    function closeDuaModal() {
+        document.getElementById('duaModal').classList.remove('active');
+        playSoundEffect(400, 0.4, 0.1);
+    }
+
     function checkDateAndReset() {
         const today = new Date().toLocaleDateString('en-CA');
         let storedDate = localStorage.getItem('lastDate');
         
         if (storedDate && storedDate !== today) {
-            // ترحيل أرقام اليوم اللي خلص للحصالة التراكمية
             for (let key in zikrCounts) {
                 zikrLifetime[key] = (zikrLifetime[key] || 0) + zikrCounts[key];
             }
             localStorage.setItem('zikrLifetime', JSON.stringify(zikrLifetime));
             
-            // تصفير عداد اليوم الجديد
             zikrCounts = {
                 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
             };
@@ -294,10 +362,12 @@
         localStorage.setItem('lastDate', today);
     }
     
-    // تشغيل الدالة أول ما الصفحة تفتح
     checkDateAndReset();
 
-    // دالة الصوت الأساسية للتسبيح
+    window.onload = () => {
+        showRandomDua();
+    };
+
     function playSoftClick(isLimit) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
@@ -312,7 +382,6 @@
         osc.start(); osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    // دالة مخصصة لأصوات الأزرار
     function playSoundEffect(freq, vol, duration) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
@@ -417,8 +486,7 @@
         const historyContent = document.getElementById('historyContent');
         
         let html = '<div style="display: flex; flex-direction: column; gap: 20px;">';
-        
-        html += `<div style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 2px solid var(--primary);">`;
+                html += `<div style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 2px solid var(--primary);">`;
         html += `<div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--ring-bg); padding-bottom: 10px;">
                     <h4 style="margin: 0; color: var(--primary); font-size: 1.1rem; font-weight: 900;">رصيدك عند الله</h4>
                  </div>`;
