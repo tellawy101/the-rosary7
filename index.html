@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#00b894">
 
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
     
     <style>
         * {
@@ -64,10 +65,7 @@
             transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        button { 
-            font-family: 'Cairo', sans-serif;
-            outline: none; border: none; cursor: pointer; z-index: 10; 
-        }
+        button { font-family: 'Cairo', sans-serif; outline: none; border: none; cursor: pointer; z-index: 10; }
 
         .container {
             background: var(--card-bg);
@@ -130,18 +128,9 @@
             pointer-events: none;
         }
 
-        .counter {
-            font-size: 4.5rem;
-            font-weight: 900;
-            color: var(--text-main);
-            transition: transform 0.1s ease-out;
-        }
+        .counter { font-size: 4.5rem; font-weight: 900; color: var(--text-main); transition: transform 0.1s ease-out; }
 
-        .click-area {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-        }
+        .click-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
         .ripple {
             position: absolute;
@@ -153,23 +142,11 @@
             opacity: 0.4;
         }
 
-        @keyframes ripple-effect {
-            to { transform: scale(4); opacity: 0; }
-        }
+        @keyframes ripple-effect { to { transform: scale(4); opacity: 0; } }
 
-        .control-btns {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 15px;
-            position: relative;
-            z-index: 10;
-        }
+        .control-btns { display: flex; justify-content: center; gap: 20px; margin-top: 15px; position: relative; z-index: 10; }
 
-        .icon-btn {
-            width: 45px; height: 45px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-        }
+        .icon-btn { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .reset-btn { background: rgba(255, 118, 117, 0.1); color: #ff7675; border: 2px solid #ff7675; }
         .undo-btn { background: rgba(108, 92, 231, 0.1); color: #6c5ce7; border: 2px solid #6c5ce7; }
         .history-btn { background: rgba(0, 184, 148, 0.1); color: var(--primary); border: 2px solid var(--primary); }
@@ -180,32 +157,21 @@
             display: none; align-items: flex-end; justify-content: center; z-index: 1000;
         }
         .modal-overlay.active { display: flex; }
-        .modal-box {
-            background: var(--modal-bg); padding: 30px 20px;
-            border-radius: 30px 30px 0 0; width: 100%; max-width: 500px;
-        }
+        .modal-box { background: var(--modal-bg); padding: 30px 20px; border-radius: 30px 30px 0 0; width: 100%; max-width: 500px; }
 
         .dua-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
-            display: none; align-items: center; justify-content: center; z-index: 2000;
-            padding: 20px;
+            display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px;
         }
         .dua-overlay.active { display: flex; }
         .dua-box {
-            background: var(--card-bg); padding: 35px 25px;
-            border-radius: 25px; width: 100%; max-width: 380px;
+            background: var(--card-bg); padding: 35px 25px; border-radius: 25px; width: 100%; max-width: 380px;
             text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .dua-text {
-            font-size: 1.3rem; font-weight: 900; color: var(--text-main);
-            line-height: 1.8; margin-bottom: 25px;
-        }
-        @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        .dua-text { font-size: 1.3rem; font-weight: 900; color: var(--text-main); line-height: 1.8; margin-bottom: 25px; }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body id="bodyArea">
@@ -217,10 +183,9 @@
 
 <div class="container" id="mainContainer">
     <div class="click-area" id="clickArea"></div>
-
     <div class="header-bar">
         <p style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 0;">مسبحة الأذكار</p>
-        <button id="themeToggle" class="theme-btn" style="background:none; font-size:1.5rem;">🌙</button>
+        <button id="themeToggle" style="background:none; font-size:1.5rem;">🌙</button>
     </div>
 
     <div class="main-content">
@@ -241,15 +206,9 @@
         </div>
         
         <div class="control-btns">
-            <button class="icon-btn history-btn" onclick="showHistoryModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg>
-            </button>
-            <button class="icon-btn undo-btn" onclick="undoLast()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"></path></svg>
-            </button>
-            <button class="icon-btn reset-btn" onclick="showModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path></svg>
-            </button>
+            <button class="icon-btn history-btn" onclick="showHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg></button>
+            <button class="icon-btn undo-btn" onclick="undoLast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"></path></svg></button>
+            <button class="icon-btn reset-btn" onclick="showModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path></svg></button>
         </div>
     </div>
 </div>
@@ -289,16 +248,37 @@
     const circ = 85 * 2 * Math.PI;
     progressRing.style.strokeDasharray = circ;
 
-    let zikrCounts = JSON.parse(localStorage.getItem('zikrCounts')) || {
-        'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
-    };
-    
-    let zikrLifetime = JSON.parse(localStorage.getItem('zikrLifetime')) || {
-        'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
-    };
-    
+    // --- نظام الخزنة الحديدية (IndexedDB) لضمان عدم ضياع البيانات مع التحديث ---
+    let db;
+    let zikrCounts = { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
+    let zikrLifetime = { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
     let activeZikr = localStorage.getItem('activeZikr') || 'سبحان الله';
     let isDarkMode = localStorage.getItem('theme') === 'dark';
+
+    const dbReq = indexedDB.open("MasbahaStorage", 2);
+    dbReq.onupgradeneeded = (e) => {
+        let database = e.target.result;
+        if (!database.objectStoreNames.contains("counters")) database.createObjectStore("counters");
+    };
+    dbReq.onsuccess = (e) => {
+        db = e.target.result;
+        loadData();
+    };
+
+    function saveData() {
+        if (!db) return;
+        const tx = db.transaction("counters", "readwrite");
+        const store = tx.objectStore("counters");
+        store.put(zikrCounts, "daily");
+        store.put(zikrLifetime, "lifetime");
+    }
+
+    function loadData() {
+        const tx = db.transaction("counters", "readonly");
+        const store = tx.objectStore("counters");
+        store.get("daily").onsuccess = (e) => { if (e.target.result) zikrCounts = e.target.result; updateUI(); };
+        store.get("lifetime").onsuccess = (e) => { if (e.target.result) zikrLifetime = e.target.result; };
+    }
 
     const duasList = [
         "اللَّهُمَّ إِنَّكَ عَفُوٌّ كَرِيمٌ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي. 🤲",
@@ -344,7 +324,7 @@
         "اللَّهُمَّ إِنِّي أَسْأَلُكَ رِضَاكَ وَالْجَنَّةَ. 🌿",
         "اللَّهُمَّ أَعُوذُ بِكَ مِنْ سَخَطِكَ وَالنَّارِ. 🔥",
         "اللَّهُمَّ طَهِّرْ قَلْبِي مِنَ النِّفَاقِ وَعَمَلِي مِنَ الرِّيَاءِ. 🤍",
-        "رَبِّ لَا تَذَرْنِي فَرْدًا وَأَنْتَ خَيْرُ الْوَارِثِينَ. 👶",
+        "رَبِّ لَا تَذَرْنِي فَرْدًا وَأَنْتَ خَيْرُ الْوارِثِينَ. 👶",
         "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ جَهْدِ الْبَلَاءِ وَدَرَكِ الشَّقَاءِ. 🌪️",
         "اللَّهُمَّ اجْعَلْ عَمَلِي كُلَّهُ خَالِصًا لِوَجْهِكَ الْكَرِيمِ. 🤲",
         "اللَّهُمَّ تَوَفَّنِي مُسْلِمًا وَأَلْحِقْنِي بِالصَّالِحِينَ. 🕊️",
@@ -402,52 +382,33 @@
         "اللَّهُمَّ اجْعَلْ آخِرَ كَلَامِنَا مِنَ الدُّنْيَا لَا إِلَهَ إِلَّا اللَّهُ. ☝️",
         "وَصَلَّى اللَّهُ وَسَلَّمَ وَبَارَكَ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ أَجْمَعِينَ. 🕌"
     ];
-    
+
     function showRandomDua() {
         const randomIndex = Math.floor(Math.random() * duasList.length);
         document.getElementById('duaText').innerText = duasList[randomIndex];
         document.getElementById('duaModal').classList.add('active');
     }
 
-    function closeDuaModal() {
-        document.getElementById('duaModal').classList.remove('active');
-        playSoundEffect(400, 0.4, 0.1);
-    }
+    function closeDuaModal() { document.getElementById('duaModal').classList.remove('active'); playSoundEffect(400, 0.4, 0.1); }
 
     function checkDateAndReset() {
         const today = new Date().toLocaleDateString('en-CA');
         let storedDate = localStorage.getItem('lastDate');
-        
         if (storedDate && storedDate !== today) {
-            for (let key in zikrCounts) {
-                zikrLifetime[key] = (zikrLifetime[key] || 0) + zikrCounts[key];
-            }
-            localStorage.setItem('zikrLifetime', JSON.stringify(zikrLifetime));
-            
-            zikrCounts = {
-                'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0
-            };
-            localStorage.setItem('zikrCounts', JSON.stringify(zikrCounts));
+            for (let key in zikrCounts) { zikrLifetime[key] = (Number(zikrLifetime[key]) || 0) + (Number(zikrCounts[key]) || 0); }
+            zikrCounts = { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
+            saveData();
         }
         localStorage.setItem('lastDate', today);
     }
-    
-    checkDateAndReset();
 
-    window.onload = () => {
-        showRandomDua();
-    };
+    window.onload = () => { checkDateAndReset(); showRandomDua(); };
 
     function playSoftClick(isLimit) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-        
-        osc.type = 'sine'; 
-        osc.frequency.setValueAtTime(isLimit ? 600 : 400, audioCtx.currentTime);
-        
-        gain.gain.setValueAtTime(0.8, audioCtx.currentTime); 
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); 
-        
+        osc.type = 'sine'; osc.frequency.setValueAtTime(isLimit ? 600 : 400, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.8, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); 
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + 0.15);
     }
@@ -455,23 +416,17 @@
     function playSoundEffect(freq, vol, duration) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-        
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        
-        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-        
+        osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + duration);
     }
 
     function handleTap(e) {
         if(e.target.closest('button')) return;
-        
         checkDateAndReset(); 
-
         zikrCounts[activeZikr]++;
+        saveData();
         updateUI();
         
         countDisplay.style.transform = 'scale(1.2)';
@@ -480,24 +435,19 @@
         const rect = clickArea.getBoundingClientRect();
         const clientX = e.clientX !== undefined ? e.clientX : e.touches[0].clientX;
         const clientY = e.clientY !== undefined ? e.clientY : e.touches[0].clientY;
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
         
         const ripple = document.createElement('div');
         ripple.className = 'ripple';
-        ripple.style.left = `${x - 25}px`;
-        ripple.style.top = `${y - 25}px`;
+        ripple.style.left = `${(clientX - rect.left) - 25}px`;
+        ripple.style.top = `${(clientY - rect.top) - 25}px`;
         ripple.style.width = ripple.style.height = '50px';
         clickArea.appendChild(ripple);
         setTimeout(() => ripple.remove(), 600);
 
         const targeted = ['سبحان الله', 'الحمد لله', 'الله أكبر'];
         const isLimit = targeted.includes(activeZikr) && zikrCounts[activeZikr] > 0 && zikrCounts[activeZikr] % 33 === 0;
-        
         playSoftClick(isLimit);
         if(navigator.vibrate) navigator.vibrate(isLimit ? [50, 30, 50] : 15);
-        
-        localStorage.setItem('zikrCounts', JSON.stringify(zikrCounts));
     }
 
     clickArea.addEventListener('pointerdown', handleTap);
@@ -506,98 +456,52 @@
         countDisplay.innerText = zikrCounts[activeZikr];
         document.body.classList.toggle('dark-mode', isDarkMode);
         themeToggle.innerText = isDarkMode ? '☀️' : '🌙';
-        
         const targeted = ['سبحان الله', 'الحمد لله', 'الله أكبر'];
-        
         if (targeted.includes(activeZikr)) {
             progressRing.style.opacity = '1';
             let step = zikrCounts[activeZikr] % 33 || (zikrCounts[activeZikr] > 0 ? 33 : 0);
             progressRing.style.strokeDashoffset = circ - (step / 33) * circ;
             progressRing.style.stroke = (step === 33) ? 'var(--completed)' : 'var(--primary)';
-        } else {
-            progressRing.style.opacity = '0'; 
-        }
+        } else { progressRing.style.opacity = '0'; }
     }
 
     function selectZikr(el, name) {
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-        activeZikr = name;
-        updateUI();
-        playSoundEffect(500, 0.6, 0.1); 
+        el.classList.add('active'); activeZikr = name;
+        localStorage.setItem('activeZikr', activeZikr);
+        updateUI(); playSoundEffect(500, 0.6, 0.1); 
     }
 
     themeToggle.onclick = () => {
-        isDarkMode = !isDarkMode;
-        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-        updateUI();
-        playSoundEffect(700, 0.5, 0.15); 
+        isDarkMode = !isDarkMode; localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        updateUI(); playSoundEffect(700, 0.5, 0.15); 
     };
 
-    function undoLast() {
-        if (zikrCounts[activeZikr] > 0) {
-            zikrCounts[activeZikr]--;
-            updateUI();
-            playSoundEffect(400, 0.4, 0.1); 
-        }
-    }
-
+    function undoLast() { if (zikrCounts[activeZikr] > 0) { zikrCounts[activeZikr]--; saveData(); updateUI(); playSoundEffect(400, 0.4, 0.1); } }
     function showModal() { document.getElementById('resetModal').classList.add('active'); }
     function hideModal() { document.getElementById('resetModal').classList.remove('active'); }
-    
-    function confirmReset() {
-        zikrCounts[activeZikr] = 0;
-        updateUI();
-        hideModal();
-        playSoundEffect(300, 0.7, 0.2); 
-    }
+    function confirmReset() { zikrCounts[activeZikr] = 0; saveData(); updateUI(); hideModal(); playSoundEffect(300, 0.7, 0.2); }
 
     function showHistoryModal() {
         const historyContent = document.getElementById('historyContent');
-        
         let html = '<div style="display: flex; flex-direction: column; gap: 20px;">';
-        
-        html += `<div style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 2px solid var(--primary);">`;
-        html += `<div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--ring-bg); padding-bottom: 10px;">
-                    <h4 style="margin: 0; color: var(--primary); font-size: 1.1rem; font-weight: 900;">رصيدك عند الله</h4>
-                 </div>`;
-        
-        html += `<div style="display: flex; flex-direction: column; gap: 8px;">`;
-        
-        const zikrs = ['سبحان الله', 'الحمد لله', 'الله أكبر', 'أستغفر الله', 'لا حول ولا قوة إلا بالله'];
-        
-        zikrs.forEach(zikr => {
-            let total = (zikrLifetime[zikr] || 0) + (zikrCounts[zikr] || 0);
-            html += `<div style="background: var(--chip-bg); padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border-right: 4px solid var(--primary);">
-                        <span style="font-size: 1rem; color: var(--text-main); font-weight: bold;">${zikr}</span>
-                        <span style="font-size: 1.2rem; color: var(--text-main); font-weight: 900; direction: ltr;">${total}</span>
-                     </div>`;
+        html += `<div style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 2px solid var(--primary);"><h4 style="text-align:center; color: var(--primary);">رصيدك عند الله</h4><div style="display: flex; flex-direction: column; gap: 8px;">`;
+        ['سبحان الله', 'الحمد لله', 'الله أكبر', 'أستغفر الله', 'لا حول ولا قوة إلا بالله'].forEach(zikr => {
+            let total = (Number(zikrLifetime[zikr]) || 0) + (Number(zikrCounts[zikr]) || 0);
+            html += `<div style="background: var(--chip-bg); padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border-right: 4px solid var(--primary);"><span style="font-weight: bold;">${zikr}</span><span style="font-weight: 900; direction: ltr;">${total}</span></div>`;
         });
-        
         html += `</div></div></div>`;
         historyContent.innerHTML = html;
-        
         document.getElementById('historyModal').classList.add('active');
         playSoundEffect(600, 0.5, 0.1);
     }
     
-    function hideHistoryModal() {
-        document.getElementById('historyModal').classList.remove('active');
-        playSoundEffect(400, 0.4, 0.1);
+    function hideHistoryModal() { document.getElementById('historyModal').classList.remove('active'); playSoundEffect(400, 0.4, 0.1); }
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js');
+        navigator.serviceWorker.addEventListener('controllerchange', () => { window.location.reload(); });
     }
-
-    document.querySelectorAll('.chip').forEach(c => {
-        if(c.innerText === activeZikr) c.classList.add('active');
-        else c.classList.remove('active');
-    });
-
-    updateUI();
-</script>
-    <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
-  }
 </script>
 </body>
 </html>
