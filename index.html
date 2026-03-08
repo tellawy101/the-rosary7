@@ -467,8 +467,8 @@
 
 <div class="modal-overlay" id="resetGoalModal" style="align-items: center;">
     <div class="modal-box" style="border-radius: 25px; max-width: 350px; text-align: center;">
-        <h3 style="color: #ff7675; margin-top: 0;">تصفير التقدم</h3>
-        <p style="margin: 15px 0; font-size: 1rem; color: var(--text-main); font-weight: bold;">هل أنت متأكد من تصفير عدد هذا الذكر للبدء من جديد؟</p>
+        <h3 style="color: #ff7675; margin-top: 0;">تصفير شريط الهدف</h3>
+        <p style="margin: 15px 0; font-size: 1rem; color: var(--text-main); font-weight: bold;">هل أنت متأكد من تصفير شريط الهدف للبدء من جديد؟ (العداد الدائري الكلي لن يتأثر)</p>
         <div style="display: flex; gap: 15px;">
             <button class="modal-btn" style="flex:1; background:#ff7675; color:white; padding:12px; border-radius:12px; font-weight:bold;" onclick="confirmResetGoal()">تصفير</button>
             <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onclick="hideResetGoalModal()">إلغاء</button>
@@ -512,8 +512,11 @@
     let db;
     let zikrCounts = { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
     let zikrLifetime = { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
-    // تعديل تهيئة الأهداف الافتراضية ليكون الأساسيين 165 دايماً
     let zikrGoals = JSON.parse(localStorage.getItem('zikrGoals')) || { 'سبحان الله': 165, 'الحمد لله': 165, 'الله أكبر': 165, 'أستغفر الله': 100, 'لا حول ولا قوة إلا بالله': 100 };
+    
+    // إضافة كائن الأوفسيت عشان التصفير الجزئي لشريط الهدف
+    let zikrGoalOffsets = JSON.parse(localStorage.getItem('zikrGoalOffsets')) || {};
+    
     let activeZikr = localStorage.getItem('activeZikr') || 'سبحان الله';
     let zikrToDelete = null;
     
@@ -538,6 +541,7 @@
         store.put(zikrCounts, "daily");
         store.put(zikrLifetime, "lifetime");
         localStorage.setItem('zikrGoals', JSON.stringify(zikrGoals));
+        localStorage.setItem('zikrGoalOffsets', JSON.stringify(zikrGoalOffsets));
     }
 
     function loadData() {
@@ -560,14 +564,9 @@
 
         function checkReady() {
             if(loadedDaily && loadedLifetime) {
-                checkDateAndReset(); // التأكد من الأيام هنا بعد تحميل الداتا
+                checkDateAndReset();
                 updateUI(); 
                 renderZikrOptions();
-                
-                // طلب الهدف لو الذكر مش أساسي وهدفه متصفر
-                if (!['سبحان الله', 'الحمد لله', 'الله أكبر'].includes(activeZikr) && (!zikrGoals[activeZikr] || zikrGoals[activeZikr] === 0)) {
-                    showEditGoalModal();
-                }
             }
         }
     }
@@ -599,11 +598,14 @@
     function confirmAddZikr() {
         const newZikr = document.getElementById('newZikrInput').value.trim();
         let newGoal = parseInt(document.getElementById('newGoalInput').value);
-        if (isNaN(newGoal) || newGoal <= 0) newGoal = 100; // لو مكتبش هدف يبقى 100
+        if (isNaN(newGoal) || newGoal <= 0) newGoal = 100;
 
         if (newZikr !== "") {
             if (zikrCounts[newZikr] === undefined) {
-                zikrCounts[newZikr] = 0; zikrLifetime[newZikr] = 0; zikrGoals[newZikr] = newGoal;
+                zikrCounts[newZikr] = 0; 
+                zikrLifetime[newZikr] = 0; 
+                zikrGoals[newZikr] = newGoal;
+                zikrGoalOffsets[newZikr] = 0;
                 saveData(); renderZikrOptions(); updateUI(); hideAddZikrModal();
             } else { showAlertModal("الذكر ده موجود بالفعل!"); }
         }
@@ -619,7 +621,10 @@
 
     function confirmDeleteZikr() {
         if (zikrToDelete) {
-            delete zikrCounts[zikrToDelete]; delete zikrLifetime[zikrToDelete]; delete zikrGoals[zikrToDelete];
+            delete zikrCounts[zikrToDelete]; 
+            delete zikrLifetime[zikrToDelete]; 
+            delete zikrGoals[zikrToDelete];
+            delete zikrGoalOffsets[zikrToDelete];
             if (activeZikr === zikrToDelete) { activeZikr = 'سبحان الله'; localStorage.setItem('activeZikr', activeZikr); }
             saveData(); renderZikrOptions(); updateUI(); hideDeleteZikrModal();
         }
@@ -636,10 +641,10 @@
     function hideResetGoalModal() { document.getElementById('resetGoalModal').classList.remove('active'); }
 
     function confirmResetGoal() {
-        zikrCounts[activeZikr] = 0;
+        // التعديل السحري هنا: التصفير بيغير نقطة بداية الهدف بس، ومش بيمسح العداد اليومي الكبير اللي تحت.
+        zikrGoalOffsets[activeZikr] = zikrCounts[activeZikr] || 0;
         saveData();
         updateUI();
-        renderZikrOptions();
         hideResetGoalModal();
         playSoundEffect(300, 0.5, 0.2);
     }
@@ -657,7 +662,6 @@
 
     function hideEditGoalModal() {
         document.getElementById('editGoalModal').classList.remove('active');
-        // لو قفل النافذة من غير ما يحط رقم وكانت صفر، نخليها 100 أمان عشان متضربش
         if (!zikrGoals[activeZikr] || zikrGoals[activeZikr] === 0) {
             zikrGoals[activeZikr] = 100;
             saveData();
@@ -709,7 +713,8 @@
         
         zikrDropdown.appendChild(addBtn);
     }
-const duasList = [
+
+    const duasList = [
         "اللَّهُمَّ إِنَّكَ عَفُوٌّ كَرِيمٌ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي. 🤲",
         "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ. ✨",
         "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى. 🤍",
@@ -809,7 +814,7 @@ const duasList = [
         "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ دَعْوَةٍ لَا يُسْتَجَابُ لَهَا. 🚫",
         "اللَّهُمَّ ارْزُقْنَا حَلَاوَةَ مُنَاجَاتِكَ. 🍯",
         "اللَّهُمَّ اجْعَلْ آخِرَ كَلَامِنَا مِنَ الدُّنْيَا لَا إِلَهَ إِلَّا اللَّهُ. ☝️",
-        " اللَّهُم وَسَلَّمَ وَبَارَكَ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ أَجْمَعِينَ. 🕌"
+        "وَصَلَّى اللَّهُ وَسَلَّمَ وَبَارَكَ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ أَجْمَعِينَ. 🕌"
     ];
 
     function showRandomDua() {
@@ -824,25 +829,25 @@ const duasList = [
         const today = new Date().toLocaleDateString('en-CA');
         let storedDate = localStorage.getItem('lastDate');
         
-        if (storedDate && storedDate !== today) {
-            for (let key in zikrCounts) { 
-                zikrLifetime[key] = (Number(zikrLifetime[key]) || 0) + (Number(zikrCounts[key]) || 0); 
-                zikrCounts[key] = 0; 
-                
-                // تصفير أهداف الأذكار غير الأساسية عشان يطلبها في اليوم الجديد
-                if (!['سبحان الله', 'الحمد لله', 'الله أكبر'].includes(key)) {
-                    zikrGoals[key] = 0;
+        if (storedDate !== today) {
+            if (storedDate) { 
+                for (let key in zikrCounts) { 
+                    zikrLifetime[key] = (Number(zikrLifetime[key]) || 0) + (Number(zikrCounts[key]) || 0); 
+                    zikrCounts[key] = 0; 
+                    zikrGoalOffsets[key] = 0;
+                    
+                    if (!['سبحان الله', 'الحمد لله', 'الله أكبر'].includes(key)) {
+                        zikrGoals[key] = 0;
+                    }
                 }
             }
+            zikrGoals['سبحان الله'] = 165;
+            zikrGoals['الحمد لله'] = 165;
+            zikrGoals['الله أكبر'] = 165;
+            
+            saveData();
+            localStorage.setItem('lastDate', today);
         }
-        
-        // تثبيت الأهداف الأساسية دايماً على 165
-        zikrGoals['سبحان الله'] = 165;
-        zikrGoals['الحمد لله'] = 165;
-        zikrGoals['الله أكبر'] = 165;
-        
-        saveData();
-        localStorage.setItem('lastDate', today);
     }
 
     function playSoftClick(isLimit) {
@@ -869,6 +874,14 @@ const duasList = [
 
     function handleTap(e) {
         if(e.target.closest('button') || e.target.closest('.zikr-selector-container')) return;
+        
+        checkDateAndReset(); 
+        
+        if (!['سبحان الله', 'الحمد لله', 'الله أكبر'].includes(activeZikr) && (!zikrGoals[activeZikr] || zikrGoals[activeZikr] === 0)) {
+            showEditGoalModal();
+            return; 
+        }
+        
         zikrCounts[activeZikr]++; saveData(); updateUI();
         countDisplay.style.transform = 'scale(1.1)'; setTimeout(() => countDisplay.style.transform = 'scale(1)', 100);
         const rect = clickArea.getBoundingClientRect();
@@ -879,7 +892,10 @@ const duasList = [
         document.body.appendChild(floatText); setTimeout(() => floatText.remove(), 800);
         
         const goal = zikrGoals[activeZikr] || 1;
-        if (zikrCounts[activeZikr] === goal) {
+        const offset = zikrGoalOffsets[activeZikr] || 0;
+        const currentGoalProgress = zikrCounts[activeZikr] - offset;
+
+        if (currentGoalProgress === goal) {
             if ('vibrate' in navigator) navigator.vibrate([100, 50, 100, 50, 100]);
             countDisplay.classList.add('goal-reached-anim');
             setTimeout(() => countDisplay.classList.remove('goal-reached-anim'), 1000);
@@ -895,16 +911,25 @@ const duasList = [
     clickArea.addEventListener('pointerdown', handleTap);
 
     function updateUI() {
-        countDisplay.innerText = zikrCounts[activeZikr];
+        countDisplay.innerText = zikrCounts[activeZikr]; 
         activeZikrName.innerText = activeZikr;
         document.body.classList.toggle('dark-mode', isDarkMode);
         themeToggle.innerText = isDarkMode ? '☀️' : '🌙';
         
-        const goal = zikrGoals[activeZikr] || 1; // حماية من القسمة على صفر
-        const currentCount = zikrCounts[activeZikr] || 0;
-        const percentRaw = (currentCount / goal) * 100;
+        const goal = zikrGoals[activeZikr] || 1; 
+        const dailyTotal = zikrCounts[activeZikr] || 0;
+        const offset = zikrGoalOffsets[activeZikr] || 0;
+        
+        let currentGoalProgress = dailyTotal - offset;
+        
+        if (currentGoalProgress < 0) {
+            currentGoalProgress = 0;
+            zikrGoalOffsets[activeZikr] = dailyTotal;
+        }
+
+        const percentRaw = (currentGoalProgress / goal) * 100;
         const percent = Math.min(percentRaw, 100);
-        const remaining = Math.max(goal - currentCount, 0);
+        const remaining = Math.max(goal - currentGoalProgress, 0);
         
         mainGoalBar.style.width = `${percent}%`;
         mainGoalBar.style.background = (percent >= 100) ? 'var(--completed)' : 'var(--primary)';
@@ -929,7 +954,6 @@ const duasList = [
         renderZikrOptions(); 
         playSoundEffect(500, 0.6, 0.1); 
         
-        // التحقق عند الاختيار: لو مش أساسي وهدفه صفر، اطلب منه الهدف
         if (!['سبحان الله', 'الحمد لله', 'الله أكبر'].includes(activeZikr) && (!zikrGoals[activeZikr] || zikrGoals[activeZikr] === 0)) {
             showEditGoalModal();
         }
@@ -957,7 +981,7 @@ const duasList = [
     }
     function hideHistoryModal() { document.getElementById('historyModal').classList.remove('active'); }
     
-    window.onload = () => { showRandomDua(); }; // تم نقل checkDateAndReset لتُنفذ بعد تحميل البيانات مباشرة لحماية الأرقام
+    window.onload = () => { showRandomDua(); }; 
 </script>
 </body>
 </html>
