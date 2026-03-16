@@ -60,7 +60,6 @@
             margin: 0;
             color: var(--text-main);
             box-sizing: border-box;
-            touch-action: manipulation;
             transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -237,6 +236,7 @@
             overflow-y: auto;
             transform: translateX(-50%) translateY(-2px);
             padding-bottom: 10px;
+            touch-action: pan-y;
         }
 
         .zikr-option-wrapper {
@@ -278,13 +278,30 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 25px auto;
+            margin: 0 auto 65px auto;
             pointer-events: none;
         }
 
         .counter { font-size: 4.5rem; font-weight: 900; color: var(--text-main); transition: transform 0.1s ease-out; }
 
-        .click-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .record-badge {
+            position: absolute;
+            bottom: -55px;
+            background: var(--header-bg);
+            color: var(--primary);
+            padding: 4px 15px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 900;
+            border: 1px solid var(--primary);
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .click-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; touch-action: none; }
 
         .ripple {
             position: absolute;
@@ -327,6 +344,7 @@
         .icon-btn { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .undo-btn { background: rgba(108, 92, 231, 0.1); color: #6c5ce7; border: 2px solid #6c5ce7; }
         .history-btn { background: rgba(0, 184, 148, 0.1); color: var(--primary); border: 2px solid var(--primary); }
+        .challenge-btn { background: rgba(253, 203, 110, 0.15); color: var(--completed); border: 2px solid var(--completed); }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -355,9 +373,77 @@
             border-radius: 12px; font-family: 'Cairo'; text-align: center; box-sizing: border-box; 
             background: var(--cancel-bg); color: var(--text-main); outline: none;
         }
+        
+        .speed-slider {
+            width: 100%; 
+            accent-color: var(--primary);
+            height: 6px;
+            border-radius: 5px;
+            outline: none;
+            margin: 15px 0;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .toast-msg.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-10px);
+        }
+        
+        .confetti-piece {
+            position: fixed;
+            top: -50px;
+            z-index: 9999;
+            font-size: 2rem;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+        
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        .challenge-top-bar {
+            display: none;
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--completed);
+            color: #2d3436;
+            padding: 8px 25px;
+            border-radius: 25px;
+            font-weight: 900;
+            z-index: 2000;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            font-size: 1.1rem;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body id="bodyArea">
+
+<div class="challenge-top-bar" id="challengeBar">
+    ⏱️ <span id="challengeTimeText">60</span>ث | 📿 <span id="challengeCountText">0</span>
+</div>
 
 <div style="position: absolute; top: 10px; width: 100%; padding: 0 20px; z-index: 100; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
     <span>ادعيلي بالهداية</span>
@@ -371,12 +457,17 @@
     <div class="click-area" id="clickArea"></div>
     <div class="header-bar">
         <p style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 0;">مسبحة الأذكار</p>
-        <button id="themeToggle" style="background:none; font-size:1.5rem;">🌙</button>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button id="settingsToggle" style="background:none; color:var(--primary); padding:0; display:flex;" onpointerdown="showSettingsModal(event)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+            <button id="themeToggle" style="background:none; font-size:1.5rem; padding:0;">🌙</button>
+        </div>
     </div>
 
     <div class="main-content">
         <div class="zikr-selector-container">
-            <div class="active-zikr-pill" id="activeZikrPill" onclick="toggleZikrDropdown()">
+            <div class="active-zikr-pill" id="activeZikrPill" onpointerdown="toggleZikrDropdown(event)">
                 <span id="activeZikrName">سبحان الله</span>
                 <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </div>
@@ -385,11 +476,11 @@
                 <div class="goal-stats">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span class="goal-label">الهدف اليومي</span>
-                        <div class="goal-number-badge" onclick="showEditGoalModal()" title="تعديل الهدف">
+                        <div class="goal-number-badge" onpointerdown="showEditGoalModal(event)" title="تعديل الهدف">
                             <span id="currentGoalDisplay">165</span>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                         </div>
-                        <button class="reset-goal-btn" onclick="showResetGoalModal()">
+                        <button class="reset-goal-btn" onpointerdown="showResetGoalModal(event)">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                             تصفير
                         </button>
@@ -410,12 +501,53 @@
                 <circle id="progressRing" stroke="var(--primary)" stroke-width="8" fill="transparent" r="85" cx="95" cy="95" stroke-linecap="round" style="transition: stroke-dashoffset 0.3s; opacity: 1;"/>
             </svg>
             <div class="counter" id="countDisplay">0</div>
+            <div class="record-badge"><span id="recordDisplay">0</span> 👑</div>
         </div>
         
         <div class="control-btns">
-            <button class="icon-btn history-btn" onclick="showHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg></button>
-            <button class="icon-btn undo-btn" onclick="undoLast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"></path></svg></button>
+            <button class="icon-btn challenge-btn" onpointerdown="showChallengeModal(event)" title="تحدي الـ 60 ثانية"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button>
+            <button class="icon-btn history-btn" onpointerdown="showHistoryModal(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg></button>
+            <button class="icon-btn undo-btn" onpointerdown="undoLast(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"></path></svg></button>
         </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="settingsModal" style="align-items: center;">
+    <div class="modal-box" style="border-radius: 25px; max-width: 350px; text-align: center;">
+        <h3 style="color: var(--primary); margin-top: 0;">الإعدادات ⚙️</h3>
+        
+        <div style="margin: 20px 0;">
+            <label style="font-weight: bold; color: var(--text-main); display: block; margin-bottom: 10px;">
+                سرعة العداد التلقائي (الضغط المطول)
+            </label>
+            <input type="range" id="speedSlider" class="speed-slider" min="50" max="500" step="10" dir="ltr" oninput="updateSpeedValue(this.value)">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); direction: ltr; font-weight: bold;">
+                <span>🚀 أسرع</span>
+                <span style="color: var(--primary);"><span id="speedValueText">120</span>ms</span>
+                <span>🐢 أبطأ</span>
+            </div>
+        </div>
+        
+        <button class="modal-btn" style="width:100%; background:var(--primary); color:white; padding:12px; border-radius:12px; font-weight:bold; margin-top: 10px;" onpointerdown="hideSettingsModal(event)">حفظ وإغلاق</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="challengeStartModal" style="align-items: center;">
+    <div class="modal-box" style="border-radius: 25px; max-width: 350px; text-align: center;">
+        <h3 style="color: var(--completed); margin-top: 0;">تحدي الدقيقة ⏱️</h3>
+        <p style="margin: 15px 0; font-size: 1.1rem; color: var(--text-main); font-weight: bold;">حاول تكسر رقمك القياسي (<span id="chalRecordDisplay" style="color:var(--completed);"></span>) في ذكر "<span id="chalZikrName"></span>" خلال 60 ثانية!</p>
+        <div style="display: flex; gap: 15px;">
+            <button class="modal-btn" style="flex:1; background:var(--completed); color:white; padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="startChallenge(event)">ابدأ التحدي</button>
+            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="hideChallengeModal(event)">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="challengeResultModal" style="align-items: center;">
+    <div class="modal-box" style="border-radius: 25px; max-width: 350px; text-align: center;">
+        <h3 style="margin-top: 0;" id="chalResultTitle"></h3>
+        <p id="chalResultText" style="margin: 15px 0; font-size: 1.1rem; color: var(--text-main); font-weight: bold;"></p>
+        <button class="modal-btn" style="width:100%; background:var(--primary); color:white; padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="hideChallengeResult(event)">حسناً</button>
     </div>
 </div>
 
@@ -423,7 +555,7 @@
     <div class="modal-box" style="height: 100dvh; max-height: 100dvh; max-width: 100%; border-radius: 0; background: var(--bg-grad); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;">
         <h3 style="text-align:center; margin-top: 10px; color: var(--text-main);">سجل التسبيح</h3>
         <div id="historyContent" style="flex: 1; overflow-y: auto; margin-top: 15px; padding-bottom: 20px;"></div>
-        <button class="modal-btn" style="width:100%; margin-top:auto; background:var(--cancel-bg); color: var(--text-main); padding:15px; border-radius:15px; font-weight:bold;" onclick="hideHistoryModal()">رجوع للمسبحة</button>
+        <button class="modal-btn" style="width:100%; margin-top:auto; background:var(--cancel-bg); color: var(--text-main); padding:15px; border-radius:15px; font-weight:bold;" onpointerdown="hideHistoryModal(event)">رجوع للمسبحة</button>
     </div>
 </div>
 
@@ -440,8 +572,8 @@
         <input type="text" id="newZikrInput" placeholder="اكتب الذكر هنا..." class="goal-input-field">
         <input type="number" id="newGoalInput" placeholder="الهدف اليومي (اختياري)" class="goal-input-field">
         <div style="display: flex; gap: 15px;">
-            <button class="modal-btn" style="flex:1; background:var(--primary); color:white; padding:12px; border-radius:12px; font-weight:bold;" onclick="confirmAddZikr()">إضافة</button>
-            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onclick="hideAddZikrModal()">إلغاء</button>
+            <button class="modal-btn" style="flex:1; background:var(--primary); color:white; padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="confirmAddZikr(event)">إضافة</button>
+            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="hideAddZikrModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
@@ -451,8 +583,8 @@
         <h3 style="color: #ff7675; margin-top: 0;">حذف الذكر</h3>
         <p id="deleteZikrText" style="margin: 15px 0; font-size: 1.1rem; color: var(--text-main); font-weight: bold;"></p>
         <div style="display: flex; gap: 15px;">
-            <button class="modal-btn" style="flex:1; background:#ff7675; color:white; padding:12px; border-radius:12px; font-weight:bold;" onclick="confirmDeleteZikr()">حذف</button>
-            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onclick="hideDeleteZikrModal()">إلغاء</button>
+            <button class="modal-btn" style="flex:1; background:#ff7675; color:white; padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="confirmDeleteZikr(event)">حذف</button>
+            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="hideDeleteZikrModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
@@ -461,7 +593,7 @@
     <div class="modal-box" style="border-radius: 25px; max-width: 350px; text-align: center;">
         <h3 style="color: #ff7675; margin-top: 0;">تنبيه 🛑</h3>
         <p id="alertText" style="margin: 15px 0; font-size: 1.1rem; color: var(--text-main); font-weight: bold;"></p>
-        <button class="modal-btn" style="width:100%; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onclick="hideAlertModal()">حسناً</button>
+        <button class="modal-btn" style="width:100%; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="hideAlertModal(event)">حسناً</button>
     </div>
 </div>
 
@@ -470,8 +602,8 @@
         <h3 style="color: #ff7675; margin-top: 0;">تصفير شريط الهدف</h3>
         <p style="margin: 15px 0; font-size: 1rem; color: var(--text-main); font-weight: bold;">هل أنت متأكد من تصفير شريط الهدف للبدء من جديد؟ (العداد الدائري الكلي لن يتأثر)</p>
         <div style="display: flex; gap: 15px;">
-            <button class="modal-btn" style="flex:1; background:#ff7675; color:white; padding:12px; border-radius:12px; font-weight:bold;" onclick="confirmResetGoal()">تصفير</button>
-            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onclick="hideResetGoalModal()">إلغاء</button>
+            <button class="modal-btn" style="flex:1; background:#ff7675; color:white; padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="confirmResetGoal(event)">تصفير</button>
+            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="hideResetGoalModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
@@ -481,11 +613,13 @@
         <h3 style="color: var(--primary); margin-top: 0;">تحديد الهدف اليومي</h3>
         <input type="number" id="editGoalInput" placeholder="اكتب الهدف الجديد..." class="goal-input-field">
         <div style="display: flex; gap: 15px;">
-            <button class="modal-btn" style="flex:1; background:var(--primary); color:white; padding:12px; border-radius:12px; font-weight:bold;" onclick="confirmEditGoal()">حفظ</button>
-            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onclick="hideEditGoalModal()">إلغاء</button>
+            <button class="modal-btn" style="flex:1; background:var(--primary); color:white; padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="confirmEditGoal(event)">حفظ</button>
+            <button class="modal-btn" style="flex:1; background:var(--cancel-bg); color:var(--text-main); padding:12px; border-radius:12px; font-weight:bold;" onpointerdown="hideEditGoalModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
+
+<div class="toast-msg" id="fullscreenToast"></div>
 
 <script>
     const countDisplay = document.getElementById("countDisplay"),
@@ -497,7 +631,8 @@
           activeZikrName = document.getElementById("activeZikrName"),
           mainGoalBar = document.getElementById("mainGoalBar"),
           goalPercentText = document.getElementById("goalPercentText"),
-          currentGoalDisplay = document.getElementById("currentGoalDisplay");
+          currentGoalDisplay = document.getElementById("currentGoalDisplay"),
+          recordDisplay = document.getElementById("recordDisplay");
 
     let audioCtx;
     function getAudioContext() {
@@ -513,15 +648,24 @@
     let zikrCounts = { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
     let zikrLifetime = { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
     let zikrGoals = JSON.parse(localStorage.getItem('zikrGoals')) || { 'سبحان الله': 165, 'الحمد لله': 165, 'الله أكبر': 165, 'أستغفر الله': 100, 'لا حول ولا قوة إلا بالله': 100 };
-    
-    // إضافة كائن الأوفسيت عشان التصفير الجزئي لشريط الهدف
     let zikrGoalOffsets = JSON.parse(localStorage.getItem('zikrGoalOffsets')) || {};
+    let zikrRecords = JSON.parse(localStorage.getItem('zikrRecords')) || { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
+    let challengeRecords = JSON.parse(localStorage.getItem('challengeRecords')) || { 'سبحان الله':0, 'الحمد لله':0, 'الله أكبر':0, 'أستغفر الله':0, 'لا حول ولا قوة إلا بالله':0 };
+    let recordCelebrated = {};
     
     let activeZikr = localStorage.getItem('activeZikr') || 'سبحان الله';
     let zikrToDelete = null;
     
     let isDarkMode = localStorage.getItem('theme') === 'dark';
     if (localStorage.getItem('theme_manual') !== 'true') isDarkMode = (new Date().getHours() >= 18 || new Date().getHours() < 6);
+
+    let fastModeSpeed = parseInt(localStorage.getItem('fastModeSpeed')) || 120;
+    let wakeLock = null;
+    
+    let isChallengeMode = false;
+    let challengeTimerInterval;
+    let challengeTimeLeft = 60;
+    let challengeCurrentCount = 0;
 
     const dbReq = indexedDB.open("MasbahaStorage", 2);
     dbReq.onupgradeneeded = (e) => {
@@ -542,6 +686,8 @@
         store.put(zikrLifetime, "lifetime");
         localStorage.setItem('zikrGoals', JSON.stringify(zikrGoals));
         localStorage.setItem('zikrGoalOffsets', JSON.stringify(zikrGoalOffsets));
+        localStorage.setItem('zikrRecords', JSON.stringify(zikrRecords));
+        localStorage.setItem('challengeRecords', JSON.stringify(challengeRecords));
     }
 
     function loadData() {
@@ -571,20 +717,91 @@
         }
     }
 
-    function toggleZikrDropdown() {
+    function showToast(msg, duration = 1500) {
+        const toast = document.getElementById('fullscreenToast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, duration);
+    }
+
+    function triggerConfetti() {
+        const emojis = ['🎉', '👑', '✨', '🌟', '🎊'];
+        for(let i=0; i<40; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti-piece';
+            confetti.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 4500);
+        }
+        playSoundEffect(1200, 0.6, 0.5);
+        if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
+    }
+
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) {
+            console.log(`Wake Lock Error: ${err.message}`);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => { wakeLock = null; });
+        }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) {
+            requestWakeLock();
+        } else {
+            releaseWakeLock();
+        }
+    });
+
+    function showSettingsModal(e) {
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('speedSlider').value = fastModeSpeed;
+        document.getElementById('speedValueText').innerText = fastModeSpeed;
+        document.getElementById('settingsModal').classList.add('active');
+        playSoundEffect(600, 0.3, 0.1);
+    }
+
+    function hideSettingsModal(e) {
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('settingsModal').classList.remove('active');
+        playSoundEffect(400, 0.3, 0.1);
+    }
+
+    function updateSpeedValue(val) {
+        fastModeSpeed = parseInt(val);
+        document.getElementById('speedValueText').innerText = fastModeSpeed;
+        localStorage.setItem('fastModeSpeed', fastModeSpeed);
+    }
+
+    function toggleZikrDropdown(e) {
+        if (e && e.cancelable) e.preventDefault();
         zikrDropdown.classList.toggle('active');
         activeZikrPill.classList.toggle('open');
         if(zikrDropdown.classList.contains('active')) playSoundEffect(600, 0.3, 0.1);
     }
 
-    window.addEventListener('click', (e) => {
+    window.addEventListener('pointerdown', (e) => {
         if (!e.target.closest('.zikr-selector-container')) {
             zikrDropdown.classList.remove('active');
             activeZikrPill.classList.remove('open');
         }
     });
 
-    function showAddZikrModal() {
+    function showAddZikrModal(e) {
+        if (e && e.cancelable) e.preventDefault();
         document.getElementById('addZikrModal').classList.add('active');
         zikrDropdown.classList.remove('active');
         activeZikrPill.classList.remove('open');
@@ -593,9 +810,13 @@
         setTimeout(() => document.getElementById('newZikrInput').focus(), 100);
     }
 
-    function hideAddZikrModal() { document.getElementById('addZikrModal').classList.remove('active'); }
+    function hideAddZikrModal(e) { 
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('addZikrModal').classList.remove('active'); 
+    }
 
-    function confirmAddZikr() {
+    function confirmAddZikr(e) {
+        if (e && e.cancelable) e.preventDefault();
         const newZikr = document.getElementById('newZikrInput').value.trim();
         let newGoal = parseInt(document.getElementById('newGoalInput').value);
         if (isNaN(newGoal) || newGoal <= 0) newGoal = 100;
@@ -606,6 +827,8 @@
                 zikrLifetime[newZikr] = 0; 
                 zikrGoals[newZikr] = newGoal;
                 zikrGoalOffsets[newZikr] = 0;
+                zikrRecords[newZikr] = 0; 
+                challengeRecords[newZikr] = 0;
                 saveData(); renderZikrOptions(); updateUI(); hideAddZikrModal();
             } else { showAlertModal("الذكر ده موجود بالفعل!"); }
         }
@@ -617,30 +840,48 @@
         document.getElementById('deleteZikrModal').classList.add('active');
     }
 
-    function hideDeleteZikrModal() { zikrToDelete = null; document.getElementById('deleteZikrModal').classList.remove('active'); }
+    function hideDeleteZikrModal(e) { 
+        if (e && e.cancelable) e.preventDefault();
+        zikrToDelete = null; document.getElementById('deleteZikrModal').classList.remove('active'); 
+    }
 
-    function confirmDeleteZikr() {
+    function confirmDeleteZikr(e) {
+        if (e && e.cancelable) e.preventDefault();
         if (zikrToDelete) {
             delete zikrCounts[zikrToDelete]; 
             delete zikrLifetime[zikrToDelete]; 
             delete zikrGoals[zikrToDelete];
             delete zikrGoalOffsets[zikrToDelete];
+            delete zikrRecords[zikrToDelete]; 
+            delete challengeRecords[zikrToDelete];
             if (activeZikr === zikrToDelete) { activeZikr = 'سبحان الله'; localStorage.setItem('activeZikr', activeZikr); }
             saveData(); renderZikrOptions(); updateUI(); hideDeleteZikrModal();
         }
     }
 
-    function showAlertModal(msg) { document.getElementById('alertText').innerText = msg; document.getElementById('alertModal').classList.add('active'); }
-    function hideAlertModal() { document.getElementById('alertModal').classList.remove('active'); }
+    function showAlertModal(msg) { 
+        document.getElementById('alertText').innerText = msg; 
+        document.getElementById('alertModal').classList.add('active'); 
+    }
+    
+    function hideAlertModal(e) { 
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('alertModal').classList.remove('active'); 
+    }
 
-    function showResetGoalModal() {
+    function showResetGoalModal(e) {
+        if (e && e.cancelable) e.preventDefault();
         document.getElementById('resetGoalModal').classList.add('active');
         playSoundEffect(600, 0.3, 0.1);
     }
 
-    function hideResetGoalModal() { document.getElementById('resetGoalModal').classList.remove('active'); }
+    function hideResetGoalModal(e) { 
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('resetGoalModal').classList.remove('active'); 
+    }
 
-    function confirmResetGoal() {
+    function confirmResetGoal(e) {
+        if (e && e.cancelable) e.preventDefault();
         zikrGoalOffsets[activeZikr] = zikrCounts[activeZikr] || 0;
         saveData();
         updateUI();
@@ -648,7 +889,8 @@
         playSoundEffect(300, 0.5, 0.2);
     }
 
-    function showEditGoalModal() {
+    function showEditGoalModal(e) {
+        if (e && e.cancelable) e.preventDefault();
         if (['سبحان الله', 'الحمد لله', 'الله أكبر'].includes(activeZikr)) {
             showAlertModal("الهدف اليومي للأذكار الأساسية ثابت تلقائياً على 165 🛑");
             return;
@@ -659,7 +901,8 @@
         playSoundEffect(600, 0.3, 0.1);
     }
 
-    function hideEditGoalModal() {
+    function hideEditGoalModal(e) {
+        if (e && e.cancelable) e.preventDefault();
         document.getElementById('editGoalModal').classList.remove('active');
         if (!zikrGoals[activeZikr] || zikrGoals[activeZikr] === 0) {
             zikrGoals[activeZikr] = 100;
@@ -668,7 +911,8 @@
         }
     }
 
-    function confirmEditGoal() {
+    function confirmEditGoal(e) {
+        if (e && e.cancelable) e.preventDefault();
         const newVal = parseInt(document.getElementById('editGoalInput').value);
         if (newVal > 0) {
             zikrGoals[activeZikr] = newVal;
@@ -682,6 +926,74 @@
         }
     }
 
+    function showChallengeModal(e) {
+        if (e && e.cancelable) e.preventDefault();
+        if(isChallengeMode) return;
+        document.getElementById('chalRecordDisplay').innerText = challengeRecords[activeZikr] || 0;
+        document.getElementById('chalZikrName').innerText = activeZikr;
+        document.getElementById('challengeStartModal').classList.add('active');
+        playSoundEffect(600, 0.3, 0.1);
+    }
+
+    function hideChallengeModal(e) {
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('challengeStartModal').classList.remove('active');
+    }
+
+    function startChallenge(e) {
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('challengeStartModal').classList.remove('active');
+        isChallengeMode = true;
+        challengeTimeLeft = 60;
+        challengeCurrentCount = 0;
+        
+        document.getElementById('challengeTimeText').innerText = challengeTimeLeft;
+        document.getElementById('challengeCountText').innerText = challengeCurrentCount;
+        document.getElementById('challengeBar').style.display = 'block';
+        
+        playSoundEffect(800, 0.5, 0.2);
+        
+        challengeTimerInterval = setInterval(() => {
+            challengeTimeLeft--;
+            document.getElementById('challengeTimeText').innerText = challengeTimeLeft;
+            
+            if(challengeTimeLeft <= 0) {
+                endChallenge();
+            }
+        }, 1000);
+    }
+
+    function endChallenge() {
+        clearInterval(challengeTimerInterval);
+        isChallengeMode = false;
+        document.getElementById('challengeBar').style.display = 'none';
+        
+        let oldRecord = challengeRecords[activeZikr] || 0;
+        let title = document.getElementById('chalResultTitle');
+        let text = document.getElementById('chalResultText');
+        
+        if(challengeCurrentCount > oldRecord) {
+            title.innerText = "عاش! رقم قياسي جديد 👑";
+            title.style.color = "var(--primary)";
+            text.innerText = `جبت ${challengeCurrentCount} تسبيحة وكسرت رقمك القديم (${oldRecord})!`;
+            challengeRecords[activeZikr] = challengeCurrentCount;
+            saveData();
+            triggerConfetti();
+        } else {
+            title.innerText = "انتهى الوقت ⏱️";
+            title.style.color = "#ff7675";
+            text.innerText = `جبت ${challengeCurrentCount} تسبيحة.. رقمك القياسي لسه (${oldRecord}). حاول تاني!`;
+            playSoundEffect(300, 0.5, 0.4);
+        }
+        
+        document.getElementById('challengeResultModal').classList.add('active');
+    }
+
+    function hideChallengeResult(e) {
+        if (e && e.cancelable) e.preventDefault();
+        document.getElementById('challengeResultModal').classList.remove('active');
+    }
+
     function renderZikrOptions() {
         zikrDropdown.innerHTML = '';
         activeZikrName.innerText = activeZikr;
@@ -692,11 +1004,28 @@
             opt.className = `zikr-option ${zikr === activeZikr ? 'selected' : ''}`;
             opt.innerText = zikr;
             
-            let pressTimer, startY = 0, isDragging = false;
-            opt.onpointerdown = (e) => { startY = e.clientY; isDragging = false; pressTimer = setTimeout(() => { if(!isDragging) { if (['سبحان الله', 'الحمد لله', 'الله أكبر', 'أستغفر الله', 'لا حول ولا قوة إلا بالله'].includes(zikr)) { showAlertModal("ممنوع حذف الأذكار الأساسية 🛑"); return; } showDeleteZikrModal(zikr); } }, 800); };
+            let pressTimer, startY = 0, isDragging = false, isLong = false;
+            opt.onpointerdown = (e) => { 
+                startY = e.clientY; isDragging = false; isLong = false;
+                pressTimer = setTimeout(() => { 
+                    if(!isDragging) { 
+                        isLong = true;
+                        if (['سبحان الله', 'الحمد لله', 'الله أكبر', 'أستغفر الله', 'لا حول ولا قوة إلا بالله'].includes(zikr)) { 
+                            showAlertModal("ممنوع حذف الأذكار الأساسية 🛑"); return; 
+                        } 
+                        showDeleteZikrModal(zikr); 
+                    } 
+                }, 800); 
+            };
             opt.onpointermove = (e) => { if (Math.abs(e.clientY - startY) > 5) { isDragging = true; clearTimeout(pressTimer); } };
-            opt.onpointerup = () => clearTimeout(pressTimer);
-            opt.onclick = () => { if(isDragging) return; selectZikr(zikr); zikrDropdown.classList.remove('active'); activeZikrPill.classList.remove('open'); };
+            opt.onpointerup = () => { 
+                clearTimeout(pressTimer);
+                if(!isDragging && !isLong) {
+                    selectZikr(zikr); 
+                    zikrDropdown.classList.remove('active'); 
+                    activeZikrPill.classList.remove('open');
+                }
+            };
             
             wrapper.appendChild(opt);
             zikrDropdown.appendChild(wrapper);
@@ -704,11 +1033,10 @@
         const addBtn = document.createElement("button");
         addBtn.className = "add-zikr-opt"; addBtn.innerText = "+ إضافة ذكر جديد";
         
-        let addStartY = 0;
-        let addIsDragging = false;
+        let addStartY = 0, addIsDragging = false;
         addBtn.onpointerdown = (e) => { addStartY = e.clientY; addIsDragging = false; };
         addBtn.onpointermove = (e) => { if (Math.abs(e.clientY - addStartY) > 5) addIsDragging = true; };
-        addBtn.onclick = () => { if(!addIsDragging) showAddZikrModal(); };
+        addBtn.onpointerup = () => { if(!addIsDragging) showAddZikrModal(); };
         
         zikrDropdown.appendChild(addBtn);
     }
@@ -718,7 +1046,6 @@
         "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ. ✨",
         "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى. 🤍",
         "يَا مُقَلِّبَ الْقُلُوبِ ثَبِّتْ قَلْبِي عَلَى دِينِكَ. 🕌",
-        // ... (باقي الأدعية كما هي لتوفير مساحة الكود) ...
         " اللَّهُم وَسَلَّمَ وَبَارَكَ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ أَجْمَعِين. 🕌"
     ];
 
@@ -728,7 +1055,10 @@
         document.getElementById('duaModal').classList.add('active');
     }
 
-    function closeDuaModal() { document.getElementById('duaModal').classList.remove('active'); playSoundEffect(400, 0.4, 0.1); }
+    function closeDuaModal() { 
+        document.getElementById('duaModal').classList.remove('active'); 
+        playSoundEffect(400, 0.4, 0.1); 
+    }
 
     function checkDateAndReset() {
         const d = new Date();
@@ -744,6 +1074,7 @@
                     zikrLifetime[key] = (Number(zikrLifetime[key]) || 0) + (Number(zikrCounts[key]) || 0); 
                     zikrCounts[key] = 0; 
                     zikrGoalOffsets[key] = 0;
+                    recordCelebrated[key] = false;
                     
                     if (!['سبحان الله', 'الحمد لله', 'الله أكبر'].includes(key)) {
                         zikrGoals[key] = 0;
@@ -784,7 +1115,7 @@
     }
 
     function handleTap(e) {
-        if(e.target.closest('button') || e.target.closest('.zikr-selector-container')) return;
+        if(e.target && (e.target.closest('button') || e.target.closest('.zikr-selector-container'))) return;
         
         checkDateAndReset(); 
         
@@ -793,14 +1124,35 @@
             return; 
         }
         
-        zikrCounts[activeZikr]++; saveData(); updateUI();
+        let currentRecord = zikrRecords[activeZikr] || 0;
+        zikrCounts[activeZikr]++; 
+
+        if (isChallengeMode) {
+            challengeCurrentCount++;
+            document.getElementById('challengeCountText').innerText = challengeCurrentCount;
+        }
+
+        if (currentRecord > 0 && zikrCounts[activeZikr] > currentRecord && !recordCelebrated[activeZikr]) {
+            showToast(`عاش! كسرنا الرقم القديم 👑`, 2000);
+            triggerConfetti();
+            recordCelebrated[activeZikr] = true;
+        }
+
+        if (zikrCounts[activeZikr] > currentRecord) {
+            zikrRecords[activeZikr] = zikrCounts[activeZikr];
+        }
+
+        saveData(); updateUI();
         countDisplay.style.transform = 'scale(1.1)'; setTimeout(() => countDisplay.style.transform = 'scale(1)', 100);
-        const rect = clickArea.getBoundingClientRect();
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX), clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        const floatText = document.createElement('div');
-        floatText.className = 'floating-text'; floatText.innerText = '+1';
-        floatText.style.left = `${clientX - 15}px`; floatText.style.top = `${clientY - 25}px`;
-        document.body.appendChild(floatText); setTimeout(() => floatText.remove(), 800);
+        
+        if (e.clientX && e.clientY) {
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            const floatText = document.createElement('div');
+            floatText.className = 'floating-text'; floatText.innerText = '+1';
+            floatText.style.left = `${clientX - 15}px`; floatText.style.top = `${clientY - 25}px`;
+            document.body.appendChild(floatText); setTimeout(() => floatText.remove(), 800);
+        }
         
         const goal = zikrGoals[activeZikr] || 1;
         const offset = zikrGoalOffsets[activeZikr] || 0;
@@ -819,11 +1171,34 @@
         }
     }
 
-    clickArea.addEventListener('pointerdown', handleTap);
+    let fastModeTimer;
+    let fastModeInterval;
+
+    clickArea.addEventListener('pointerdown', (e) => {
+        if (e.cancelable) e.preventDefault();
+        handleTap(e);
+        
+        fastModeTimer = setTimeout(() => {
+            fastModeInterval = setInterval(() => {
+                handleTap(e);
+            }, fastModeSpeed);
+        }, 500);
+    }, { passive: false });
+
+    const stopFastMode = () => {
+        clearTimeout(fastModeTimer);
+        clearInterval(fastModeInterval);
+    };
+
+    clickArea.addEventListener('pointerup', stopFastMode);
+    clickArea.addEventListener('pointerleave', stopFastMode);
+    clickArea.addEventListener('pointercancel', stopFastMode);
 
     function updateUI() {
         countDisplay.innerText = zikrCounts[activeZikr]; 
         activeZikrName.innerText = activeZikr;
+        recordDisplay.innerText = zikrRecords[activeZikr] || 0;
+
         document.body.classList.toggle('dark-mode', isDarkMode);
         themeToggle.innerText = isDarkMode ? '☀️' : '🌙';
         
@@ -870,10 +1245,17 @@
         }
     }
     
-    themeToggle.onclick = () => { isDarkMode = !isDarkMode; localStorage.setItem('theme', isDarkMode ? 'dark' : 'light'); localStorage.setItem('theme_manual', 'true'); updateUI(); playSoundEffect(700, 0.5, 0.15); };
-    function undoLast() { if (zikrCounts[activeZikr] > 0) { zikrCounts[activeZikr]--; saveData(); updateUI(); renderZikrOptions(); playSoundEffect(400, 0.4, 0.1); } }
+    themeToggle.onpointerdown = (e) => { 
+        if(e && e.cancelable) e.preventDefault();
+        isDarkMode = !isDarkMode; localStorage.setItem('theme', isDarkMode ? 'dark' : 'light'); localStorage.setItem('theme_manual', 'true'); updateUI(); playSoundEffect(700, 0.5, 0.15); 
+    };
+    function undoLast(e) { 
+        if(e && e.cancelable) e.preventDefault();
+        if (zikrCounts[activeZikr] > 0) { zikrCounts[activeZikr]--; saveData(); updateUI(); renderZikrOptions(); playSoundEffect(400, 0.4, 0.1); } 
+    }
     
-    function showHistoryModal() {
+    function showHistoryModal(e) {
+        if(e && e.cancelable) e.preventDefault();
         const historyContent = document.getElementById('historyContent');
         let html = '<div style="display: flex; flex-direction: column; gap: 20px;">';
         html += `<div style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 2px solid var(--primary);"><h4 style="text-align:center; color: var(--primary);">رصيدك عند الله</h4><div style="display: flex; flex-direction: column; gap: 8px;">`;
@@ -881,8 +1263,23 @@
         
         Object.keys(zikrCounts).forEach(zikr => {
             let total = (Number(zikrLifetime[zikr]) || 0) + (Number(zikrCounts[zikr]) || 0);
+            let record = zikrRecords[zikr] || 0;
+            let chalRecord = challengeRecords[zikr] || 0;
             grandTotal += total;
-            html += `<div style="background: var(--chip-bg); padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border-right: 4px solid var(--primary);"><span>${zikr}</span><span style="font-weight: 900; direction: ltr;">${total}</span></div>`;
+            html += `<div style="background: var(--chip-bg); padding: 12px 15px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; border-right: 4px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: bold; font-size: 1.05rem;">${zikr}</span>
+                    <span style="font-weight: 900; direction: ltr; color: var(--primary); font-size: 1.1rem;">${total}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 5px;">
+                    <span>👑 الرقم اليومي:</span>
+                    <span style="font-weight: bold; color: var(--text-main);">${record}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+                    <span>⏱️ التحدي (60ث):</span>
+                    <span style="font-weight: bold; color: var(--completed);">${chalRecord}</span>
+                </div>
+            </div>`;
         });
         
         html += `<div style="margin-top: 15px; padding-top: 15px; border-top: 2px dashed var(--primary); display: flex; justify-content: space-between; align-items: center;"><span style="font-weight: 900; color: var(--primary);">إجمالي التسبيح</span><span style="font-weight: 900; color: var(--primary); font-size: 1.3rem;">${grandTotal}</span></div></div></div></div>`;
@@ -890,12 +1287,17 @@
         document.getElementById('historyModal').classList.add('active');
         playSoundEffect(600, 0.5, 0.1);
     }
-    function hideHistoryModal() { document.getElementById('historyModal').classList.remove('active'); }
+    function hideHistoryModal(e) { 
+        if(e && e.cancelable) e.preventDefault();
+        document.getElementById('historyModal').classList.remove('active'); 
+    }
     
-    // إضافة مستمعات الأحداث عشان لو التطبيق كان شغال في الخلفية ورجعت فتحته يصفر الواجهة فوراً
     function handleAppResume() {
         if (db && checkDateAndReset()) {
             updateUI();
+        }
+        if (document.fullscreenElement) {
+            requestWakeLock();
         }
     }
     document.addEventListener('visibilitychange', () => { 
