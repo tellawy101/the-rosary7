@@ -429,20 +429,40 @@
             transform: translateX(-50%);
             background: var(--completed);
             color: #2d3436;
-            padding: 8px 25px;
-            border-radius: 25px;
+            padding: 8px 15px 8px 25px;
+            border-radius: 30px;
             font-weight: 900;
             z-index: 2000;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            font-size: 1.1rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25), 0 5px 15px rgba(0,0,0,0.1);
+            font-size: 1.2rem;
             white-space: nowrap;
+            animation: floatBar 3s ease-in-out infinite;
+            align-items: center;
+            gap: 15px;
+        }
+
+        @keyframes floatBar {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        .pulse-time {
+            display: inline-block;
+            animation: pulseTime 1s infinite;
+            color: #d63031;
+        }
+
+        @keyframes pulseTime {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
         }
     </style>
 </head>
 <body id="bodyArea">
 
 <div class="challenge-top-bar" id="challengeBar">
-    ⏱️ <span id="challengeTimeText">60</span>ث | 📿 <span id="challengeCountText">0</span>
+    <span>⏱️ <span id="challengeTimeText" class="pulse-time">60</span>ث | 📿 <span id="challengeCountText">0</span></span>
+    <button onpointerdown="cancelChallenge(event)" style="background: rgba(0,0,0,0.1); color: #2d3436; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: transform 0.1s;">✖</button>
 </div>
 
 <div style="position: absolute; top: 10px; width: 100%; padding: 0 20px; z-index: 100; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
@@ -947,15 +967,18 @@
         challengeTimeLeft = 60;
         challengeCurrentCount = 0;
         
-        document.getElementById('challengeTimeText').innerText = challengeTimeLeft;
+        const challengeTimeText = document.getElementById('challengeTimeText');
+        challengeTimeText.innerText = challengeTimeLeft;
+        challengeTimeText.classList.add('pulse-time'); 
+        
         document.getElementById('challengeCountText').innerText = challengeCurrentCount;
-        document.getElementById('challengeBar').style.display = 'block';
+        document.getElementById('challengeBar').style.display = 'flex'; 
         
         playSoundEffect(800, 0.5, 0.2);
         
         challengeTimerInterval = setInterval(() => {
             challengeTimeLeft--;
-            document.getElementById('challengeTimeText').innerText = challengeTimeLeft;
+            challengeTimeText.innerText = challengeTimeLeft;
             
             if(challengeTimeLeft <= 0) {
                 endChallenge();
@@ -963,10 +986,21 @@
         }, 1000);
     }
 
+    function cancelChallenge(e) {
+        if (e && e.cancelable) e.preventDefault();
+        clearInterval(challengeTimerInterval);
+        isChallengeMode = false;
+        document.getElementById('challengeBar').style.display = 'none';
+        document.getElementById('challengeTimeText').classList.remove('pulse-time');
+        playSoundEffect(300, 0.4, 0.2);
+        showToast("تم إلغاء التحدي 🛑", 1500);
+    }
+
     function endChallenge() {
         clearInterval(challengeTimerInterval);
         isChallengeMode = false;
         document.getElementById('challengeBar').style.display = 'none';
+        document.getElementById('challengeTimeText').classList.remove('pulse-time'); 
         
         let oldRecord = challengeRecords[activeZikr] || 0;
         let title = document.getElementById('chalResultTitle');
@@ -1264,7 +1298,6 @@
         Object.keys(zikrCounts).forEach(zikr => {
             let total = (Number(zikrLifetime[zikr]) || 0) + (Number(zikrCounts[zikr]) || 0);
             let record = zikrRecords[zikr] || 0;
-            let chalRecord = challengeRecords[zikr] || 0;
             grandTotal += total;
             html += `<div style="background: var(--chip-bg); padding: 12px 15px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; border-right: 4px solid var(--primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1274,10 +1307,6 @@
                 <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 5px;">
                     <span>👑 الرقم اليومي:</span>
                     <span style="font-weight: bold; color: var(--text-main);">${record}</span>
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
-                    <span>⏱️ التحدي (60ث):</span>
-                    <span style="font-weight: bold; color: var(--completed);">${chalRecord}</span>
                 </div>
             </div>`;
         });
