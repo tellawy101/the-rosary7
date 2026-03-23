@@ -136,7 +136,7 @@
             margin-top: 5px;
         }
 
-        .theme-btn {
+        .theme-btn, .vibration-btn {
             background: var(--card-bg);
             width: 45px;
             height: 45px;
@@ -148,6 +148,12 @@
             cursor: pointer;
             font-size: 1.2rem;
             border: none;
+            transition: var(--transition);
+        }
+
+        .vibration-btn.active {
+            background: var(--primary);
+            color: white;
         }
 
         .main-container {
@@ -392,12 +398,14 @@
             </div>
             <div class="zikr-dropdown" id="zikrDropdown"></div>
         </div>
-        <button class="theme-btn" id="themeToggle" onclick="toggleTheme(event)">🌙</button>
+        <div style="display: flex; gap: 10px;">
+            <button class="vibration-btn" id="vibrationToggle" onclick="toggleVibration(event)">📳</button>
+            <button class="theme-btn" id="themeToggle" onclick="toggleTheme(event)">🌙</button>
+        </div>
     </div>
     
     <div class="actions-row">
         <button class="action-btn" onclick="showHistoryModal(event)">📊</button>
-        <button class="action-btn" id="fullscreenBtn" onclick="toggleFullscreen(event)">🖥️</button>
     </div>
 </div>
 
@@ -487,11 +495,44 @@
 
     let currentIdx = parseInt(localStorage.getItem('currentZikrIdx')) || 0;
     let autoInterval = null;
+    let vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false';
 
     const ring = document.getElementById('progressRing');
     const radius = ring.r.baseVal.value;
     const circumference = 2 * Math.PI * radius;
     ring.style.strokeDasharray = `${circumference} ${circumference}`;
+
+    // دالة الاهتزاز - محسنة
+    function doVibrate(duration = 10) {
+        if (!vibrationEnabled) return;
+        
+        try {
+            // التحقق من وجود خاصية الاهتزاز
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(duration);
+            } 
+            // لبعض المتصفحات على Android
+            else if (window.navigator && window.navigator.webkitVibrate) {
+                window.navigator.webkitVibrate(duration);
+            }
+            // للمتصفحات القديمة
+            else if (window.navigator && window.navigator.mozVibrate) {
+                window.navigator.mozVibrate(duration);
+            }
+        } catch(e) {
+            console.log("Vibration not supported:", e);
+        }
+    }
+
+    // تحديث حالة زر الاهتزاز
+    function updateVibrationButton() {
+        const btn = document.getElementById('vibrationToggle');
+        if (vibrationEnabled) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
 
     // 2. تحديث الشاشة
     function updateDisplay() {
@@ -499,7 +540,7 @@
         
         if (z.count >= z.goal) {
             z.count = 0; 
-            if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+            doVibrate(100);
             spawnConfetti();
         }
 
@@ -523,6 +564,7 @@
 
     // 3. التسبيح مع منع التكرار المزدوج
     let processingIncrement = false;
+    let lastVibrationTime = 0;
 
     function increment() {
         if (processingIncrement) return;
@@ -530,7 +572,14 @@
         
         zikrs[currentIdx].count++;
         zikrs[currentIdx].total++;
-        if (window.navigator.vibrate) window.navigator.vibrate(10);
+        
+        // اهتزاز لكل تسبيحة - مع منع الاهتزاز المتكرر جداً
+        const now = Date.now();
+        if (now - lastVibrationTime > 30) {
+            doVibrate(10);
+            lastVibrationTime = now;
+        }
+        
         showFloatingText("+1");
         updateDisplay();
         
@@ -557,7 +606,7 @@
         }
     }
 
-    // التعامل مع أحداث اللمس والماوس مع منع التكرار
+    // التعامل مع أحداث اللمس والماوس
     const clickArea = document.getElementById('clickArea');
     let isTouchDevice = false;
 
@@ -604,7 +653,6 @@
         }
     }
 
-    // إضافة مستمع الحدث لإغلاق القوائم
     document.addEventListener('click', closeAllDropdowns);
 
     function renderDropdown() {
@@ -632,38 +680,16 @@
         document.body.classList.toggle('dark-mode');
         document.getElementById('themeToggle').innerText = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
     }
-
-    // وظيفة ملء الشاشة
-    function toggleFullscreen(e) {
+    
+    // تبديل الاهتزاز
+    function toggleVibration(e) {
         e.stopPropagation();
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error attempting to enable fullscreen: ${err.message}`);
-            });
-        } else {
-            document.exitFullscreen();
+        vibrationEnabled = !vibrationEnabled;
+        localStorage.setItem('vibrationEnabled', vibrationEnabled);
+        updateVibrationButton();
+        if (vibrationEnabled) {
+            doVibrate(50);
         }
-    }
-
-    // تفعيل ملء الشاشة التلقائي عند تحميل الصفحة
-    function autoFullscreen() {
-        // محاولة تفعيل ملء الشاشة فوراً
-        try {
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
-        } catch(e) {}
-        
-        // أيضاً محاولة تفعيلها عند أي تفاعل في حال منعها المتصفح
-        const enableFullscreenOnFirstClick = () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
-            document.removeEventListener('click', enableFullscreenOnFirstClick);
-            document.removeEventListener('touchstart', enableFullscreenOnFirstClick);
-        };
-        document.addEventListener('click', enableFullscreenOnFirstClick);
-        document.addEventListener('touchstart', enableFullscreenOnFirstClick);
     }
 
     function showAddZikrModal(e) {
@@ -754,8 +780,29 @@
         }
     }
 
-    // بدء التطبيق مع تفعيل ملء الشاشة التلقائي
+    // بدء التطبيق
     updateDisplay();
+    updateVibrationButton();
+    
+    // تفعيل ملء الشاشة
+    function autoFullscreen() {
+        try {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        } catch(e) {}
+        
+        const enableFullscreenOnFirstClick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            document.removeEventListener('click', enableFullscreenOnFirstClick);
+            document.removeEventListener('touchstart', enableFullscreenOnFirstClick);
+        };
+        document.addEventListener('click', enableFullscreenOnFirstClick);
+        document.addEventListener('touchstart', enableFullscreenOnFirstClick);
+    }
+    
     autoFullscreen();
 </script>
 </body>
