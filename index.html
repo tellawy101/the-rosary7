@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -371,9 +372,6 @@
 
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .pulse-time { animation: pulseRed 1s infinite; font-weight: 900; }
-        @keyframes pulseRed { 0% { color: white; } 50% { color: #ff7675; } 100% { color: white; } }
-
         .floating-text {
             position: fixed;
             color: var(--primary);
@@ -405,28 +403,9 @@
         }
 
         .history-list { text-align: right; max-height: 300px; overflow-y: auto; padding: 5px; }
-
-        .toast-msg {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px 25px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            z-index: 4000;
-            opacity: 0;
-            visibility: hidden;
-            transition: 0.3s;
-        }
-
-        .toast-msg.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
-<body>
+<body onclick="closeAllDropdowns(event)">
 
 <div class="top-bar">
     <div class="header-row">
@@ -437,13 +416,12 @@
             </div>
             <div class="zikr-dropdown" id="zikrDropdown"></div>
         </div>
-        <button class="theme-btn" id="themeToggle">🌙</button>
+        <button class="theme-btn" id="themeToggle" onclick="toggleTheme(event)">🌙</button>
     </div>
     
     <div class="actions-row">
         <button class="action-btn" onclick="showHistoryModal(event)">📊</button>
         <button class="action-btn primary-action" onclick="showChallengeModal(event)">⚡</button>
-        <button class="action-btn" onclick="undoLast(event)">↩️</button>
     </div>
 </div>
 
@@ -462,12 +440,12 @@
         <div class="stats-grid">
             <div class="stat-card" onclick="showEditGoalModal(event)">
                 <span class="stat-label">الهدف اليومي</span>
-                <div class="stat-value" id="currentGoalDisplay">165</div>
+                <div class="stat-value" id="currentGoalDisplay">33</div>
                 <div class="goal-bar-container"><div class="goal-bar" id="mainGoalBar"></div></div>
             </div>
             <div class="stat-card" onclick="showResetGoalModal(event)">
                 <span class="stat-label">المتبقي للهدف</span>
-                <div class="stat-value" id="goalPercentText">165</div>
+                <div class="stat-value" id="goalPercentText">33</div>
             </div>
         </div>
     </div>
@@ -486,11 +464,12 @@
     </div>
 </div>
 
-<div class="modal" id="addZikrModal">
+<!-- Modals -->
+<div id="addZikrModal" class="modal" onclick="if(event.target===this) hideAddZikrModal()">
     <div class="modal-content">
         <div class="modal-title">إضافة ذكر جديد</div>
-        <input type="text" class="modal-input" id="newZikrInput" placeholder="اكتب الذكر هنا...">
-        <input type="number" class="modal-input" id="newGoalInput" placeholder="الهدف (مثلاً: 100)">
+        <input type="text" id="newZikrInput" class="modal-input" placeholder="اسم الذكر" autocomplete="off">
+        <input type="number" id="newGoalInput" class="modal-input" placeholder="الهدف اليومي" value="33">
         <div class="modal-btns">
             <button class="modal-btn btn-confirm" onclick="confirmAddZikr(event)">إضافة</button>
             <button class="modal-btn btn-cancel" onclick="hideAddZikrModal(event)">إلغاء</button>
@@ -498,86 +477,53 @@
     </div>
 </div>
 
-<div class="modal" id="editGoalModal">
+<div id="editGoalModal" class="modal" onclick="if(event.target===this) hideEditGoalModal()">
     <div class="modal-content">
         <div class="modal-title">تعديل الهدف</div>
-        <input type="number" class="modal-input" id="editGoalInput" placeholder="أدخل الرقم الجديد">
+        <input type="number" id="goalInput" class="modal-input" placeholder="الهدف الجديد">
         <div class="modal-btns">
-            <button class="modal-btn btn-confirm" onclick="confirmEditGoal(event)">حفظ</button>
+            <button class="modal-btn btn-confirm" onclick="confirmEditGoal(event)">تأكيد</button>
             <button class="modal-btn btn-cancel" onclick="hideEditGoalModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
 
-<div class="modal" id="deleteZikrModal">
+<div id="resetGoalModal" class="modal" onclick="if(event.target===this) hideResetGoalModal()">
     <div class="modal-content">
-        <div class="modal-title" style="color:#ff7675">حذف الذكر</div>
-        <p class="modal-text" id="deleteZikrText"></p>
+        <div class="modal-title">إعادة ضبط الهدف</div>
+        <div class="modal-text">هل تريد إعادة ضبط العداد الحالي للصفر؟</div>
         <div class="modal-btns">
-            <button class="modal-btn btn-delete" onclick="confirmDeleteZikr(event)">حذف نهائياً</button>
-            <button class="modal-btn btn-cancel" onclick="hideDeleteZikrModal(event)">تراجع</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal" id="resetGoalModal">
-    <div class="modal-content">
-        <div class="modal-title">تصفير المسافة؟</div>
-        <p class="modal-text">هل تريد بدء عداد الهدف من الصفر لهذا الذكر؟ (مش هيأثر على المجموع الكلي)</p>
-        <div class="modal-btns">
-            <button class="modal-btn btn-confirm" onclick="confirmResetGoal(event)">تأكيد</button>
+            <button class="modal-btn btn-confirm" onclick="confirmResetGoal(event)">نعم</button>
             <button class="modal-btn btn-cancel" onclick="hideResetGoalModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
 
-<div class="modal" id="challengeStartModal">
+<div id="challengeStartModal" class="modal" onclick="if(event.target===this) hideChallengeStartModal()">
     <div class="modal-content">
-        <div class="modal-title">تحدي الـ 60 ثانية ⚡</div>
-        <p class="modal-text">تقدر تسبح كام مرة في دقيقة؟<br><small id="chalZikrName"></small></p>
-        <p style="font-size: 0.8rem; color: var(--primary); margin-bottom: 15px;">رقمك القياسي: <span id="chalRecordDisplay">0</span></p>
+        <div class="modal-title">تحدي السرعة</div>
+        <div class="modal-text">اختر مدة التحدي (بالثواني)</div>
         <div class="modal-btns">
-            <button class="modal-btn btn-confirm" onclick="startChallenge(event)">يلا بينا!</button>
-            <button class="modal-btn btn-cancel" onclick="hideChallengeModal(event)">بعدين</button>
+            <button class="modal-btn btn-confirm" onclick="startChallenge(30)">30 ثانية</button>
+            <button class="modal-btn btn-confirm" onclick="startChallenge(60)">60 ثانية</button>
+            <button class="modal-btn btn-confirm" onclick="startChallenge(120)">120 ثانية</button>
+            <button class="modal-btn btn-cancel" onclick="hideChallengeStartModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
 
-<div class="modal" id="challengeResultModal">
+<div id="historyModal" class="modal" onclick="if(event.target===this) hideHistoryModal()">
     <div class="modal-content">
-        <div class="modal-title" id="chalResultTitle">انتهى الوقت!</div>
-        <p class="modal-text" id="chalResultText"></p>
-        <button class="modal-btn btn-confirm" style="width:100%" onclick="hideChallengeResult(event)">حبيبي تسلم</button>
-    </div>
-</div>
-
-<div class="modal" id="alertModal">
-    <div class="modal-content">
-        <div class="modal-title">تنبيه</div>
-        <p class="modal-text" id="alertText"></p>
-        <button class="modal-btn btn-confirm" style="width:100%" onclick="hideAlertModal(event)">تمام</button>
-    </div>
-</div>
-
-<div class="modal" id="historyModal">
-    <div class="modal-content" style="max-width: 350px;">
-        <div class="modal-title">إحصائياتك 📊</div>
+        <div class="modal-title">سجل التسبيح</div>
         <div id="historyContent" class="history-list"></div>
-        <button class="modal-btn btn-cancel" style="width:100%; margin-top:20px;" onclick="hideHistoryModal(event)">إغلاق</button>
+        <div class="modal-btns">
+            <button class="modal-btn btn-cancel" onclick="hideHistoryModal(event)">إغلاق</button>
+        </div>
     </div>
 </div>
 
-<div class="modal" id="duaModal">
-    <div class="modal-content">
-        <div class="modal-title">ذكر اليوم ✨</div>
-        <p class="modal-text" id="duaText" style="font-size: 1.2rem; font-weight: 700; color: var(--primary);"></p>
-        <button class="modal-btn btn-confirm" style="width:100%" onclick="closeDuaModal()">آمين</button>
-    </div>
-</div>
-
-<div class="toast-msg" id="fullscreenToast"></div>
 <script>
-    // الداتا الأساسية
+    // 1. البيانات والتحميل
     let zikrs = JSON.parse(localStorage.getItem('zikrs')) || [
         { name: "سبحان الله", count: 0, goal: 33, total: 0 },
         { name: "الحمد لله", count: 0, goal: 33, total: 0 },
@@ -590,120 +536,180 @@
     let challengeTimer = null;
     let challengeCount = 0;
     let challengeTimeLeft = 60;
-    let pressStartTime = 0;
 
     const ring = document.getElementById('progressRing');
     const radius = ring.r.baseVal.value;
     const circumference = 2 * Math.PI * radius;
     ring.style.strokeDasharray = `${circumference} ${circumference}`;
 
+    // 2. تحديث الشاشة
     function updateDisplay() {
-        const z = zikrs[currentIdx];
+        let z = zikrs[currentIdx];
+        
+        if (z.count >= z.goal) {
+            z.count = 0; 
+            if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+            spawnConfetti();
+        }
+
         document.getElementById('activeZikrName').innerText = z.name;
         document.getElementById('countDisplay').innerText = z.count;
         document.getElementById('recordDisplay').innerText = z.total;
         document.getElementById('currentGoalDisplay').innerText = z.goal;
         
-        // حساب المتبقي
         const remaining = Math.max(0, z.goal - z.count);
         document.getElementById('goalPercentText').innerText = remaining;
 
-        // تحديث الدائرة والشريط
-        const offset = circumference - (Math.min(z.count / z.goal, 1) * circumference);
+        const offset = circumference - ((z.count / z.goal) * circumference);
         ring.style.strokeDashoffset = offset;
-        const barWidth = Math.min((z.count / z.goal) * 100, 100);
+        const barWidth = (z.count / z.goal) * 100;
         document.getElementById('mainGoalBar').style.width = `${barWidth}%`;
-
-        if (z.count >= z.goal) {
-            ring.style.stroke = "var(--completed)";
-            document.getElementById('countDisplay').classList.add('goal-reached-anim');
-        } else {
-            ring.style.stroke = "var(--primary)";
-            document.getElementById('countDisplay').classList.remove('goal-reached-anim');
-        }
         
         localStorage.setItem('zikrs', JSON.stringify(zikrs));
         localStorage.setItem('currentZikrIdx', currentIdx);
         renderDropdown();
     }
 
+    // 3. التسبيح مع منع التكرار المزدوج
+    let lastTouchTime = 0;
+    let processingIncrement = false;
+
     function increment() {
+        if (processingIncrement) return; // منع التنفيذ المتزامن
+        processingIncrement = true;
+        
         zikrs[currentIdx].count++;
         zikrs[currentIdx].total++;
-        
         if (isChallengeActive) {
             challengeCount++;
             document.getElementById('challengeCountText').innerText = challengeCount;
         }
-
-        if (zikrs[currentIdx].count === zikrs[currentIdx].goal) {
-            if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-            spawnConfetti();
-        } else {
-            if (window.navigator.vibrate) window.navigator.vibrate(10);
-        }
-
+        if (window.navigator.vibrate) window.navigator.vibrate(10);
         showFloatingText("+1");
         updateDisplay();
+        
+        setTimeout(() => { processingIncrement = false; }, 50); // إعادة تعيين العلم بعد فترة قصيرة
     }
 
-    // منع العد السريع وقت السكرين شوت (تحسين الضغط المطول)
-    const clickArea = document.getElementById('clickArea');
-    clickArea.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        pressStartTime = Date.now();
-        increment();
-        
-        // العد السريع هيبدأ بس لو فضلت دايس أكتر من 600ms (عشان نتفادى حركة السكرين شوت)
-        autoInterval = setTimeout(() => {
-            autoInterval = setInterval(increment, 120);
+    // الضغط المطول
+    let pressTimer = null;
+    let isPressing = false;
+
+    function startAutoIncrement() {
+        if (autoInterval) clearInterval(autoInterval);
+        pressTimer = setTimeout(() => {
+            autoInterval = setInterval(() => {
+                if (!processingIncrement) increment();
+            }, 120);
         }, 600);
-    });
+    }
 
-    clickArea.addEventListener('touchend', () => {
-        clearTimeout(autoInterval);
-        clearInterval(autoInterval);
-    });
-
-    function undoLast(e) {
-        if(e) e.stopPropagation();
-        if (zikrs[currentIdx].count > 0) {
-            zikrs[currentIdx].count--;
-            zikrs[currentIdx].total--;
-            updateDisplay();
+    function stopAutoIncrement() {
+        clearTimeout(pressTimer);
+        if (autoInterval) {
+            clearInterval(autoInterval);
+            autoInterval = null;
         }
     }
 
+    // التعامل مع أحداث اللمس والماوس مع منع التكرار
+    const clickArea = document.getElementById('clickArea');
+    let isTouchDevice = false;
+
+    // منع تنفيذ الحدثين معًا لنفس اللمسة
+    clickArea.addEventListener('touchstart', (e) => {
+        if (e.target === clickArea) {
+            e.preventDefault();
+            isTouchDevice = true;
+            increment();
+            startAutoIncrement();
+        }
+    });
+    clickArea.addEventListener('touchend', stopAutoIncrement);
+    clickArea.addEventListener('touchcancel', stopAutoIncrement);
+
+    clickArea.addEventListener('mousedown', (e) => {
+        // إذا كان الجهاز لمسي وتم تنفيذ touchstart بالفعل، نمنع تنفيذ mousedown
+        if (isTouchDevice) {
+            isTouchDevice = false;
+            return;
+        }
+        if (e.target === clickArea) {
+            e.preventDefault();
+            increment();
+            startAutoIncrement();
+        }
+    });
+    clickArea.addEventListener('mouseup', stopAutoIncrement);
+    clickArea.addEventListener('mouseleave', stopAutoIncrement);
+
+    // 4. إدارة القائمة المنسدلة
     function toggleZikrDropdown(e) {
         e.stopPropagation();
-        document.getElementById('zikrDropdown').classList.toggle('active');
-        document.getElementById('activeZikrPill').classList.toggle('open');
+        const dropdown = document.getElementById('zikrDropdown');
+        const pill = document.getElementById('activeZikrPill');
+        dropdown.classList.toggle('active');
+        pill.classList.toggle('open');
     }
 
-    function selectZikr(i) {
-        currentIdx = i;
-        document.getElementById('zikrDropdown').classList.remove('active');
-        document.getElementById('activeZikrPill').classList.remove('open');
-        updateDisplay();
+    function closeAllDropdowns(e) {
+        const dropdown = document.getElementById('zikrDropdown');
+        const pill = document.getElementById('activeZikrPill');
+        if (!dropdown.contains(e.target) && !pill.contains(e.target)) {
+            dropdown.classList.remove('active');
+            pill.classList.remove('open');
+        }
     }
 
     function renderDropdown() {
         const container = document.getElementById('zikrDropdown');
         container.innerHTML = zikrs.map((z, i) => `
             <div class="zikr-option-wrapper">
-                <button class="zikr-option ${i === currentIdx ? 'selected' : ''}" onclick="selectZikr(${i})">
+                <button class="zikr-option ${i === currentIdx ? 'selected' : ''}" onclick="selectZikr(event, ${i})">
                     ${z.name} <small>(${z.total})</small>
                 </button>
             </div>
         `).join('') + `<button class="add-zikr-opt" onclick="showAddZikrModal(event)">+ إضافة ذكر</button>`;
     }
 
-    // باقي دوال المودال (تعديل الهدف، التحدي، إلخ)
-    function showEditGoalModal(e) { e.stopPropagation(); document.getElementById('editGoalModal').classList.add('active'); }
-    function hideEditGoalModal() { document.getElementById('editGoalModal').classList.remove('active'); }
-    function confirmEditGoal() {
-        const val = parseInt(document.getElementById('editGoalInput').value);
-        if(val > 0) { zikrs[currentIdx].goal = val; updateDisplay(); hideEditGoalModal(); }
+    function selectZikr(e, i) {
+        e.stopPropagation();
+        currentIdx = i;
+        document.getElementById('zikrDropdown').classList.remove('active');
+        document.getElementById('activeZikrPill').classList.remove('open');
+        updateDisplay();
+    }
+
+    // 5. وظائف الأزرار
+    function toggleTheme(e) {
+        e.stopPropagation();
+        document.body.classList.toggle('dark-mode');
+        document.getElementById('themeToggle').innerText = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+    }
+
+    function showAddZikrModal(e) {
+        e.stopPropagation();
+        document.getElementById('addZikrModal').classList.add('active');
+        document.getElementById('zikrDropdown').classList.remove('active');
+    }
+
+    function hideAddZikrModal(e) {
+        if(e) e.stopPropagation();
+        document.getElementById('addZikrModal').classList.remove('active');
+    }
+
+    function confirmAddZikr(e) {
+        e.stopPropagation();
+        const name = document.getElementById('newZikrInput').value.trim();
+        const goal = parseInt(document.getElementById('newGoalInput').value);
+        if (name && goal > 0) {
+            zikrs.push({ name: name, count: 0, goal: goal, total: 0 });
+            currentIdx = zikrs.length - 1;
+            updateDisplay();
+            hideAddZikrModal();
+            document.getElementById('newZikrInput').value = '';
+            document.getElementById('newGoalInput').value = '';
+        }
     }
 
     function showHistoryModal(e) {
@@ -712,28 +718,80 @@
         content.innerHTML = zikrs.map(z => `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--chip-bg)"><span>${z.name}</span><b>${z.total}</b></div>`).join('');
         document.getElementById('historyModal').classList.add('active');
     }
-    function hideHistoryModal() { document.getElementById('historyModal').classList.remove('active'); }
 
-    function showChallengeModal(e) {
-        e.stopPropagation();
-        document.getElementById('challengeStartModal').classList.add('active');
+    function hideHistoryModal(e) {
+        if(e) e.stopPropagation();
+        document.getElementById('historyModal').classList.remove('active');
     }
-    function startChallenge() {
-        document.getElementById('challengeStartModal').classList.remove('active');
-        isChallengeActive = true; challengeCount = 0; challengeTimeLeft = 60;
+
+    // 6. مودالات الأهداف والتحديات
+    function showEditGoalModal(e) { 
+        e.stopPropagation(); 
+        document.getElementById('editGoalModal').classList.add('active'); 
+        document.getElementById('goalInput').value = zikrs[currentIdx].goal;
+    }
+    function hideEditGoalModal(e) { if(e) e.stopPropagation(); document.getElementById('editGoalModal').classList.remove('active'); }
+    function confirmEditGoal(e) {
+        e.stopPropagation();
+        const newGoal = parseInt(document.getElementById('goalInput').value);
+        if (newGoal > 0) {
+            zikrs[currentIdx].goal = newGoal;
+            if (zikrs[currentIdx].count >= newGoal) {
+                zikrs[currentIdx].count = 0;
+            }
+            updateDisplay();
+            hideEditGoalModal();
+        }
+    }
+
+    function showResetGoalModal(e) { e.stopPropagation(); document.getElementById('resetGoalModal').classList.add('active'); }
+    function hideResetGoalModal(e) { if(e) e.stopPropagation(); document.getElementById('resetGoalModal').classList.remove('active'); }
+    function confirmResetGoal(e) {
+        e.stopPropagation();
+        zikrs[currentIdx].count = 0;
+        updateDisplay();
+        hideResetGoalModal();
+    }
+
+    function showChallengeModal(e) { e.stopPropagation(); document.getElementById('challengeStartModal').classList.add('active'); }
+    function hideChallengeStartModal(e) { if(e) e.stopPropagation(); document.getElementById('challengeStartModal').classList.remove('active'); }
+
+    function startChallenge(seconds) {
+        if (isChallengeActive) return;
+        isChallengeActive = true;
+        challengeCount = 0;
+        challengeTimeLeft = seconds;
+        document.getElementById('challengeCountText').innerText = "0";
+        document.getElementById('challengeTimeText').innerText = seconds;
         document.getElementById('challengeBar').style.display = 'flex';
+        hideChallengeStartModal();
+
+        if (challengeTimer) clearInterval(challengeTimer);
         challengeTimer = setInterval(() => {
-            challengeTimeLeft--;
-            document.getElementById('challengeTimeText').innerText = challengeTimeLeft;
-            if(challengeTimeLeft <= 0) { 
-                clearInterval(challengeTimer); 
-                isChallengeActive = false; 
+            if (challengeTimeLeft <= 1) {
+                clearInterval(challengeTimer);
+                challengeTimer = null;
+                isChallengeActive = false;
                 document.getElementById('challengeBar').style.display = 'none';
-                alert("خلصت! سبحت: " + challengeCount);
+                alert(`انتهى التحدي! عدد التسبيحات: ${challengeCount}`);
+            } else {
+                challengeTimeLeft--;
+                document.getElementById('challengeTimeText').innerText = challengeTimeLeft;
             }
         }, 1000);
     }
 
+    function cancelChallenge(e) {
+        e.stopPropagation();
+        if (challengeTimer) {
+            clearInterval(challengeTimer);
+            challengeTimer = null;
+        }
+        isChallengeActive = false;
+        document.getElementById('challengeBar').style.display = 'none';
+    }
+
+    // تأثيرات بصرية
     function showFloatingText(txt) {
         const el = document.createElement('div');
         el.className = 'floating-text';
@@ -755,11 +813,6 @@
             setTimeout(() => c.remove(), 3000);
         }
     }
-
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-    });
 
     updateDisplay();
 </script>
