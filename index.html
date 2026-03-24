@@ -538,11 +538,10 @@
     function updateDisplay() {
         let z = zikrs[currentIdx];
         
-        if (z.count >= z.goal) {
-            z.count = 0; 
-            doVibrate(100);
-            spawnConfetti();
-        }
+        if (z.count === z.goal) {
+    doVibrate(100);
+    spawnConfetti();
+}
 
         document.getElementById('activeZikrName').innerText = z.name;
         document.getElementById('countDisplay').innerText = z.count;
