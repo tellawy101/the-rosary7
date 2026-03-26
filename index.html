@@ -82,7 +82,7 @@
 
         .active-zikr-pill.open { border-color: var(--primary); }
 
-        #activeZikrName { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #activeZikrName { font-weight: 700; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .chevron { width: 12px; height: 12px; fill: var(--primary); transition: var(--transition); }
         .open .chevron { transform: rotate(180deg); }
@@ -109,15 +109,33 @@
 
         .zikr-option-wrapper { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
 
+        .delete-zikr-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            border: none;
+            background: #fff0f0;
+            color: #e17055;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: 0.2s;
+        }
+        .dark-mode .delete-zikr-btn { background: rgba(225,112,85,0.15); }
+        .delete-zikr-btn:hover { background: #e17055; color: white; }
+
         .zikr-option {
             flex: 1;
-            padding: 12px 15px;
+            padding: 15px 18px;
             border-radius: 12px;
             border: none;
             background: transparent;
             color: var(--text-main);
             text-align: right;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
             transition: 0.2s;
         }
@@ -146,7 +164,7 @@
             justify-content: center;
             box-shadow: var(--shadow);
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             border: none;
             transition: var(--transition);
         }
@@ -179,6 +197,7 @@
             display: flex;
             justify-content: center;
             margin-bottom: 20px;
+            position: relative;
             z-index: 10;
             pointer-events: auto;
         }
@@ -192,7 +211,7 @@
 
         .stat-card {
             background: var(--card-bg);
-            padding: 12px 15px;
+            padding: 15px 18px;
             border-radius: 18px;
             box-shadow: var(--shadow);
             text-align: center;
@@ -202,12 +221,12 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 80px;
+            min-height: 90px;
         }
 
         .stat-card:active { transform: scale(0.95); }
-        .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; display: block; }
-        .stat-value { font-weight: 900; font-size: 1rem; color: var(--primary); line-height: 1.2; }
+        .stat-label { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 3px; display: block; }
+        .stat-value { font-weight: 900; font-size: 1.35rem; color: var(--primary); line-height: 1.2; }
 
         .goal-bar-container {
             width: 100%;
@@ -235,8 +254,8 @@
         }
 
         .progress-svg {
-            width: 260px;
-            height: 260px;
+            width: 300px;
+            height: 300px;
             transform: rotate(-90deg);
         }
 
@@ -256,21 +275,28 @@
             transform: translate(-50%, -50%);
             text-align: center;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .count-num {
-            font-size: 4.5rem;
+            font-size: 5.5rem;
             font-weight: 900;
             color: var(--text-main);
             line-height: 1;
-            transition: transform 0.1s;
+            direction: ltr;
+            text-align: center;
+            width: 100%;
+            transition: transform 0.1s, font-size 0.2s ease;
         }
 
         .record-pill {
             background: var(--chip-bg);
             padding: 4px 12px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 1rem;
             color: var(--text-muted);
             margin-top: 6px;
             display: inline-flex;
@@ -279,8 +305,8 @@
         }
 
         .action-btn {
-            width: 45px;
-            height: 45px;
+            width: 52px;
+            height: 52px;
             border-radius: 14px;
             border: none;
             background: var(--card-bg);
@@ -289,7 +315,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             color: var(--text-muted);
             transition: var(--transition);
         }
@@ -326,8 +352,8 @@
 
         .modal.active .modal-content { transform: scale(1); }
 
-        .modal-title { font-weight: 900; font-size: 1.3rem; margin-bottom: 15px; color: var(--text-main); }
-        .modal-text { color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+        .modal-title { font-weight: 900; font-size: 1.5rem; margin-bottom: 15px; color: var(--text-main); }
+        .modal-text { color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; font-size: 1.05rem; font-weight: 600; }
 
         .modal-input {
             width: 100%;
@@ -338,7 +364,7 @@
             color: var(--text-main);
             margin-bottom: 20px;
             text-align: center;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: 700;
         }
 
@@ -399,7 +425,7 @@
             <div class="zikr-dropdown" id="zikrDropdown"></div>
         </div>
         <div style="display: flex; gap: 10px;">
-            <button class="vibration-btn" id="vibrationToggle" onclick="toggleVibration(event)">📳</button>
+            <button class="theme-btn" id="resetBtn" onclick="showResetGoalModal(event)">🔄</button>
             <button class="theme-btn" id="themeToggle" onclick="toggleTheme(event)">🌙</button>
         </div>
     </div>
@@ -412,14 +438,14 @@
 <div class="main-container">
     <div class="click-area" id="clickArea"></div>
 
-    <div class="stats-grid-container">
+    <div class="stats-grid-container" ontouchstart="event.stopPropagation()" onmousedown="event.stopPropagation()">
         <div class="stats-grid">
             <div class="stat-card" onclick="showEditGoalModal(event)">
                 <span class="stat-label">الهدف اليومي</span>
                 <div class="stat-value" id="currentGoalDisplay">33</div>
                 <div class="goal-bar-container"><div class="goal-bar" id="mainGoalBar"></div></div>
             </div>
-            <div class="stat-card" onclick="showResetGoalModal(event)">
+            <div class="stat-card">
                 <span class="stat-label">المتبقي للهدف</span>
                 <div class="stat-value" id="goalPercentText">33</div>
             </div>
@@ -471,6 +497,17 @@
         <div class="modal-btns">
             <button class="modal-btn btn-confirm" onclick="confirmResetGoal(event)">نعم</button>
             <button class="modal-btn btn-cancel" onclick="hideResetGoalModal(event)">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div id="deleteZikrModal" class="modal" onclick="if(event.target===this) hideDeleteZikrModal()">
+    <div class="modal-content">
+        <div class="modal-title">حذف الذكر</div>
+        <div class="modal-text" id="deleteZikrText">هل تريد حذف هذا الذكر؟</div>
+        <div class="modal-btns">
+            <button class="modal-btn btn-confirm" style="background:#e17055;" onclick="confirmDeleteZikr(event)">حذف</button>
+            <button class="modal-btn btn-cancel" onclick="hideDeleteZikrModal(event)">إلغاء</button>
         </div>
     </div>
 </div>
@@ -534,27 +571,44 @@
         }
     }
 
+    // الأذكار التي تظهر لها الدائرة فقط
+    const RING_ZIKRS = ["سبحان الله", "الحمد لله", "الله أكبر"];
+    const RING_TARGET = 33;
+
     // 2. تحديث الشاشة
     function updateDisplay() {
         let z = zikrs[currentIdx];
         
         if (z.count === z.goal) {
-    doVibrate(100);
-    spawnConfetti();
-}
+            doVibrate(100);
+            spawnConfetti();
+        }
 
         document.getElementById('activeZikrName').innerText = z.name;
         document.getElementById('countDisplay').innerText = z.count;
+        const digits = String(z.count).length;
+        const fontSize = digits <= 2 ? '4.5rem' : digits === 3 ? '3.5rem' : digits === 4 ? '2.8rem' : '2.2rem';
+        document.getElementById('countDisplay').style.fontSize = fontSize;
         document.getElementById('recordDisplay').innerText = z.total;
         document.getElementById('currentGoalDisplay').innerText = z.goal;
         
         const remaining = Math.max(0, z.goal - z.count);
         document.getElementById('goalPercentText').innerText = remaining;
 
-        const offset = circumference - ((z.count / z.goal) * circumference);
-        ring.style.strokeDashoffset = offset;
+        // الدائرة تظهر فقط لسبحان الله والحمد لله والله أكبر وتكتمل عند 33 ثابتة
+        const hasRing = RING_ZIKRS.includes(z.name);
+        if (hasRing) {
+            ring.style.opacity = '1';
+            const ringProgress = z.count % RING_TARGET;
+            const offset = circumference - ((ringProgress / RING_TARGET) * circumference);
+            ring.style.strokeDashoffset = offset;
+        } else {
+            ring.style.opacity = '0';
+            ring.style.strokeDashoffset = circumference;
+        }
+
         const barWidth = (z.count / z.goal) * 100;
-        document.getElementById('mainGoalBar').style.width = `${barWidth}%`;
+        document.getElementById('mainGoalBar').style.width = `${Math.min(barWidth, 100)}%`;
         
         localStorage.setItem('zikrs', JSON.stringify(zikrs));
         localStorage.setItem('currentZikrIdx', currentIdx);
@@ -653,16 +707,46 @@
     }
 
     document.addEventListener('click', closeAllDropdowns);
+    document.addEventListener('touchstart', closeAllDropdowns, { passive: true });
 
     function renderDropdown() {
         const container = document.getElementById('zikrDropdown');
+        const BASE_COUNT = 3;
         container.innerHTML = zikrs.map((z, i) => `
             <div class="zikr-option-wrapper">
                 <button class="zikr-option ${i === currentIdx ? 'selected' : ''}" onclick="selectZikr(event, ${i})">
                     ${z.name} <small>(${z.total})</small>
                 </button>
+                ${i >= BASE_COUNT ? `<button class="delete-zikr-btn" onclick="deleteZikr(event, ${i})" title="حذف">✕</button>` : ''}
             </div>
         `).join('') + `<button class="add-zikr-opt" onclick="showAddZikrModal(event)">+ إضافة ذكر</button>`;
+    }
+
+    let pendingDeleteIdx = null;
+
+    function deleteZikr(e, i) {
+        e.stopPropagation();
+        if (i < 3) return;
+        pendingDeleteIdx = i;
+        document.getElementById('deleteZikrText').innerText = `هل تريد حذف "${zikrs[i].name}"؟`;
+        document.getElementById('deleteZikrModal').classList.add('active');
+    }
+
+    function hideDeleteZikrModal(e) {
+        if (e) e.stopPropagation();
+        document.getElementById('deleteZikrModal').classList.remove('active');
+        pendingDeleteIdx = null;
+    }
+
+    function confirmDeleteZikr(e) {
+        e.stopPropagation();
+        const i = pendingDeleteIdx;
+        if (i === null || i < 3) return;
+        zikrs.splice(i, 1);
+        if (currentIdx >= zikrs.length) currentIdx = zikrs.length - 1;
+        if (currentIdx === i) currentIdx = 0;
+        hideDeleteZikrModal();
+        updateDisplay();
     }
 
     function selectZikr(e, i) {
